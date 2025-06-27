@@ -11,10 +11,37 @@ import {
   User,
   Settings
 } from 'lucide-react';
-
+type UserResponse = {
+  id: number;
+  email: string;
+  nickname: string;
+};
+import { useEffect, useState } from 'react';
+import API from '../components/AxiosInstance'
 const Home = () => {
   const navigate = useNavigate();
+  const [nickname, setNickname] = useState('');
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await API.get<UserResponse>('/user/');
+        setNickname(res.data.nickname);
+      } catch (err) {
+        if (err.response?.status === 401){
+          try {
+          await API.post('/auth/refresh');
+        // refresh 성공하면 다시 원래 요청 재시도
+        const res = await API.get<UserResponse>('/user/');
+        setNickname(res.data.nickname);
+      } catch (refreshErr) {
+        navigate('/login')
+      }
+        }
+      }
+    };
 
+    fetchUser();
+  }, []);
   const handleCardClick = (cardType: string) => {
     switch (cardType) {
       case 'recent':
@@ -63,7 +90,7 @@ const Home = () => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            안녕하세요, 학습자님! 👋
+            안녕하세요, {nickname || '학습자'}님! 👋
           </h1>
           <p className="text-gray-600">오늘도 수어 학습을 시작해볼까요?</p>
         </div>
