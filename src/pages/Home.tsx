@@ -11,11 +11,17 @@ import {
   User,
   Settings
 } from 'lucide-react';
+<<<<<<< Updated upstream
+=======
+import BadgeModal from '@/components/BadgeModal';
+import API from '@/components/AxiosInstance';
+>>>>>>> Stashed changes
 type UserResponse = {
   id: number;
   email: string;
   nickname: string;
 };
+<<<<<<< Updated upstream
 import { useEffect, useState } from 'react';
 import API from '../components/AxiosInstance'
 const Home = () => {
@@ -39,6 +45,43 @@ const Home = () => {
         }
       }
     };
+=======
+const Home = () => {
+  const navigate = useNavigate();
+  const [nickname, setNickname] = useState('');
+  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+  const [todaySentence, setTodaySentence] = useState<string>('로딩 중...');
+  useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const res = await API.get<UserResponse>('/user/');
+      setNickname(res.data.nickname);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        try {
+          await API.post('/auth/refresh');
+          const res = await API.get<UserResponse>('/user/');
+          setNickname(res.data.nickname);
+        } catch {
+          navigate('/login');
+        }
+      }
+    }
+  };
+
+  const fetchRandomSentence = async () => {
+    try {
+      const res = await API.get<{ sentence: string }>('/api/random-sentence');
+      setTodaySentence(res.data.sentence);
+    } catch {
+      setTodaySentence('문장을 불러오지 못했습니다.');
+    }
+  };
+
+  fetchUser();
+  fetchRandomSentence();
+}, [navigate]);
+>>>>>>> Stashed changes
 
     fetchUser();
   }, []);
