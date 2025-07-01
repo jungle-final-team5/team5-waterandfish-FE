@@ -19,7 +19,7 @@ import ExampleAnim from '@/components/ExampleAnim';
 import FeedbackDisplay from '@/components/FeedbackDisplay';
 
 const Learn = () => {
-  const [data, setData] = useState(null);
+  const [animData, setAnimData] = useState(null);
   const [currentFrame, setCurrentFrame] = useState(0);
 
   const navigate = useNavigate();
@@ -39,9 +39,9 @@ const Learn = () => {
 
     // 애니메이션 재생/정지 처리
   useEffect(() => {
-    if (isPlaying && data) {
+    if (isPlaying && animData) {
       animationIntervalRef.current = setInterval(() => {
-        if (currentFrame < data.pose.length - 1) {
+        if (currentFrame < animData.pose.length - 1) {
           setCurrentFrame(prev => prev + 1);
         } else {
           setCurrentFrame(0);
@@ -59,14 +59,14 @@ const Learn = () => {
         clearInterval(animationIntervalRef.current);
       }
     };
-  }, [isPlaying, animationSpeed, data, currentFrame]);
+  }, [isPlaying, animationSpeed, animData, currentFrame]);
 
     const loadData = async () => {
     try {
       // 첫 번째 JSON 파일만 로드
       const response = await fetch('/result/KETI_SL_0000000414_landmarks.json');
       const landmarkData = await response.json();
-      setData(landmarkData);
+      setAnimData(landmarkData);
     } catch (error) {
       console.error('데이터 로드 실패:', error);
     }
@@ -206,7 +206,7 @@ const Learn = () => {
             {/* Example Video Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-800">수어 예시</h3>
-                <ExampleAnim data={data} currentFrame={currentFrame} showCylinders={true} showLeftHand={true} showRightHand={true}/>
+                <ExampleAnim data={animData} currentFrame={currentFrame} showCylinders={true} showLeftHand={true} showRightHand={true}/>
               {currentStepData.type === 'example' && (
                 <div className="flex justify-center">
                   <Button onClick={handleNextStep} className="bg-blue-600 hover:bg-blue-700">

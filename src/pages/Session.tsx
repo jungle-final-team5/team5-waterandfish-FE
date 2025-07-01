@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -278,9 +278,11 @@ const Session = () => {
     }
   }, [isConnected, isConnecting, connectionError, state.isStreaming]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+useEffect(() => {
+  if (currentSign?.videoUrl) {
+    loadData(currentSign?.videoUrl);
+  }
+}, [currentSign?.videoUrl]);
 
   useEffect(() => {
     if (chapter) {
@@ -457,16 +459,20 @@ const Session = () => {
     };
   }, [isPlaying, animationSpeed, data, currentFrame]);
 
-  const loadData = async () => {
-    try {
-      // 첫 번째 JSON 파일만 로드
-      const response = await fetch('/result/KETI_SL_0000000414_landmarks.json');
-      const landmarkData = await response.json();
-      setData(landmarkData);
-    } catch (error) {
-      console.error('데이터 로드 실패:', error);
-    }
-  };
+const loadData = useCallback(async (videoUrl: string) => {
+  if (!videoUrl) {
+    console.warn("videoUrl 없음, loadData 실행 중단");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/result/${videoUrl}`);
+    const landmarkData = await response.json();
+    setData(landmarkData);
+  } catch (error) {
+    console.error('데이터 로드 실패:', error);
+  }
+}, []);
 
   const handleStartRecording = () => {
     setIsRecording(true);
