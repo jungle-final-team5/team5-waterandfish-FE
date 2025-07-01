@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -20,6 +20,12 @@ import { useLearningData } from '@/hooks/useLearningData';
 import { Lesson } from '@/types/learning';
 import { signClassifierClient, ClassificationResult } from '../services/SignClassifierClient';
 import { useVideoStream } from '../hooks/useVideoStream';
+import SessionHeader from '@/components/SessionHeader';
+import QuizDisplay from '@/components/QuizDisplay';
+import LearningDisplay from '@/components/LearningDisplay';
+import WebcamSection from '@/components/WebcamSection';
+import { createPoseHandler } from '@/components/detect/usePoseHandler';
+import HandDetectionIndicator from '@/components/HandDetectionIndicator';
 
 const Session = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -29,11 +35,15 @@ const Session = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const { videoRef, canvasRef, state, startStream, stopStream, captureFrameAsync } = useVideoStream();
   const [transmissionCount, setTransmissionCount] = useState(0);
+  const [isCrossed, setIsCrossed] = useState(false);
+  const initialPose = useRef<boolean>(false);
+  const [isHandDetected, setIsHandDetected] = useState(false);
 
   const navigate = useNavigate();
   const { categoryId, chapterId, sessionType } = useParams();
+  
   const { getCategoryById, getChapterById, addToReview, markSignCompleted, markChapterCompleted, markCategoryCompleted, getChapterProgress } = useLearningData();
-
+  
   const [data, setData] = useState(null);
   const [currentFrame, setCurrentFrame] = useState(0);
 
@@ -78,6 +88,72 @@ const Session = () => {
       return false;
     }
   };
+
+  // MediaPipe pose detection 설정
+  useEffect(() => {
+    if (!state.isStreaming || !videoRef.current) return;
+
+    console.log('🎯 MediaPipe pose detection 시작');
+    const pose = createPoseHandler((rightShoulder, rightWrist, isHandDetected) => {
+      const shoulderVisibility = rightShoulder as typeof rightShoulder & { visibility: number } ;
+      const wristVisibility = rightWrist as typeof rightWrist & { visibility: number };
+      if ((shoulderVisibility.visibility ?? 0) < 0.5 || (wristVisibility.visibility ?? 0 ) < 0.5) {
+        setIsHandDetected(false);
+        initialPose.current = false;
+        setIsCrossed(false);
+        return;
+      }
+      // 손 감지 상태 업데이트      
+      if (isHandDetected && rightWrist && rightShoulder) {
+        if (rightWrist.x < rightShoulder.x) {
+          initialPose.current = true;
+          console.log('🤚 초기 포즈 감지됨 (손이 어깨 왼쪽)');
+        }
+        if (initialPose.current && rightWrist.x > rightShoulder.x) {
+          setIsCrossed(true);
+          console.log('✋ 손이 어깨를 가로질렀습니다');
+        }
+      } 
+    });
+
+    // 비디오가 준비되면 MediaPipe에 연결
+    const video = videoRef.current;
+    if (video.readyState >= 2) {
+      console.log('📹 비디오 준비됨, MediaPipe 연결 시작');
+      
+      const processFrame = async () => {
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          await pose.send({ image: video });
+        }
+        if (state.isStreaming) {
+          requestAnimationFrame(processFrame);
+        }
+      };
+      
+      processFrame();
+    } else {
+      // 비디오가 준비될 때까지 대기
+      const onVideoReady = async () => {
+        console.log('📹 비디오 준비됨, MediaPipe 연결 시작');
+        
+        const processFrame = async () => {
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            await pose.send({ image: video });
+          }
+          if (state.isStreaming) {
+            requestAnimationFrame(processFrame);
+          }
+        };
+        
+        processFrame();
+      };
+      
+      video.addEventListener('loadeddata', onVideoReady);
+      return () => {
+        video.removeEventListener('loadeddata', onVideoReady);
+      };
+    }
+  }, [state.isStreaming, videoRef.current]);
 
   // 자동 연결 및 스트림 시작
   useEffect(() => {
@@ -202,9 +278,11 @@ const Session = () => {
     }
   }, [isConnected, isConnecting, connectionError, state.isStreaming]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+useEffect(() => {
+  if (currentSign?.videoUrl) {
+    loadData(currentSign?.videoUrl);
+  }
+}, [currentSign?.videoUrl]);
 
   useEffect(() => {
     if (chapter) {
@@ -287,7 +365,7 @@ const Session = () => {
     }
 
     // 분류 1위와 정답 수어 비교
-    const isCorrect = currentResult.prediction.toLowerCase() === currentSign.word.toLowerCase();
+    const isCorrect = (currentResult.prediction.toLowerCase() === currentSign.word.toLowerCase()) && isCrossed;
     const confidence = currentResult.confidence;
 
     console.log('🎯 분류 결과 비교:', {
@@ -323,13 +401,18 @@ const Session = () => {
         }
       }
 
-      // 정답이면 자동으로 다음 수어로 이동 (4-8 구현)
+      // 정답이면 피드백 표시 (자동 진행은 FeedbackDisplay의 onComplete에서 처리)
       if (isCorrect) {
         setIsMovingNextSign(true);
-        console.log('🎉 정답! 3초 후 다음 수어로 이동합니다.');
+        console.log('🎉 정답! FeedbackDisplay에서 진행 관리합니다.');
+        // 자동 진행 로직 제거 - FeedbackDisplay의 onComplete에서 처리
+      } else if (!isQuizMode) {
+        // 학습 모드에서 오답일 때는 자동 진행하지 않음 (수동으로 처리)
+      } else {
+        // 퀴즈 모드에서 오답일 때는 3초 후 자동 진행
         setTimeout(() => {
-          handleNextSign(); // 다음 수어로 이동 또는 완료 처리
-        }, 3000); // 3초로 증가하여 성공 피드백을 충분히 볼 수 있도록
+          handleNextSign();
+        }, 3000);
       }
     }
   }, [currentResult, currentSign, feedback, isQuizMode, timerActive]);
@@ -376,16 +459,20 @@ const Session = () => {
     };
   }, [isPlaying, animationSpeed, data, currentFrame]);
 
-  const loadData = async () => {
-    try {
-      // 첫 번째 JSON 파일만 로드
-      const response = await fetch('/result/KETI_SL_0000000414_landmarks.json');
-      const landmarkData = await response.json();
-      setData(landmarkData);
-    } catch (error) {
-      console.error('데이터 로드 실패:', error);
-    }
-  };
+const loadData = useCallback(async (videoUrl: string) => {
+  if (!videoUrl) {
+    console.warn("videoUrl 없음, loadData 실행 중단");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/result/${videoUrl}`);
+    const landmarkData = await response.json();
+    setData(landmarkData);
+  } catch (error) {
+    console.error('데이터 로드 실패:', error);
+  }
+}, []);
 
   const handleStartRecording = () => {
     setIsRecording(true);
@@ -419,7 +506,7 @@ const Session = () => {
     }, 3000); // 3초로 통일
   };
 
-  const handleNextSign = () => {
+  const handleNextSign = async () => {
     setIsMovingNextSign(false);
     if (chapter && currentSignIndex < chapter.signs.length - 1) {
       setCurrentSignIndex(currentSignIndex + 1);
@@ -457,6 +544,12 @@ const Session = () => {
     setAutoStarted(false);
     setCurrentResult(null); // 이전 분류 결과 초기화
     console.log('🔄 다시 시도:', currentSign?.word);
+  };
+
+  // FeedbackDisplay 완료 콜백 함수
+  const handleFeedbackComplete = () => {
+    console.log('🎉 FeedbackDisplay 완료, 다음 수어로 이동');
+    handleNextSign();
   };
 
   // 연결 오류 시 새로고침 안내
@@ -544,44 +637,25 @@ const Session = () => {
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                onClick={() => navigate(`/learn/category/${categoryId}`)}
-                className="hover:bg-blue-50"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                뒤로
-              </Button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-800">
-                  {isQuizMode ? '퀴즈' : '학습'}: {currentSign.word}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {chapter.title} • {currentSignIndex + 1}/{chapter.signs.length}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {isQuizMode && (
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm text-gray-600">퀴즈 모드</span>
-                </div>
-              )}
-              <div className="w-32">
-                <Progress value={progress} className="h-2" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* 손 감지 상태 표시 인디케이터 */}
+      <HandDetectionIndicator 
+        isHandDetected={isHandDetected}
+        isConnected={isConnected}
+        isStreaming={state.isStreaming}
+      />
+      
+      <SessionHeader 
+        isQuizMode={isQuizMode}
+        currentSign={currentSign}
+        chapter={chapter}
+        currentSignIndex={currentSignIndex}
+        progress={progress}
+        categoryId={categoryId}
+        navigate={navigate}
+      />
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
@@ -599,187 +673,47 @@ const Session = () => {
           <div className="grid lg:grid-cols-2 gap-12">
             {/* 퀴즈 모드에서는 예시 영상 대신 텍스트만 표시 */}
             {isQuizMode ? (
-              <div className="space-y-6">
-                <h3 className="text-xl font-semibold text-gray-800">수행할 수어</h3>
-                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 min-h-[400px]">
-                  <CardContent className="pt-8">
-                    <div className="text-center flex flex-col justify-center h-full min-h-[350px]">
-                      <div className="text-8xl mb-8">🤟</div>
-                      <h2 className="text-4xl font-bold text-gray-800 mb-6">
-                        "{currentSign.word}"
-                      </h2>
-                      <p className="text-lg text-gray-600">
-                        위 단어를 수어로 표현해보세요
-                      </p>
-                      {!quizStarted && (
-                        <p className="text-sm text-blue-600 mt-4">
-                          퀴즈가 자동으로 시작됩니다
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {/* 퀴즈 모드 건너뛰기 버튼 */}
-                {quizStarted && !feedback && (
-                  <div className="flex justify-center">
-                    <Button 
-                      onClick={handleNextSign}
-                      variant="outline"
-                      className="border-gray-400 text-gray-600 hover:bg-gray-50"
-                    >
-                      건너뛰기
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <QuizDisplay 
+                currentSign={currentSign}
+                quizStarted={quizStarted}
+                feedback={feedback}
+                handleNextSign={handleNextSign}
+              />
             ) : (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800">수어 예시</h3>
-                <ExampleAnim data={data} currentFrame={currentFrame} showCylinders={true} showLeftHand={true} showRightHand={true} />
-                
-                {/* 현재 수어 텍스트 표시 */}
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div className="text-center">
-                    <p className="text-sm text-blue-600 mb-2">따라해보세요</p>
-                    <h2 className="text-3xl font-bold text-blue-800">
-                      "{currentSign.word}"
-                    </h2>
-                  </div>
-                </div>
-              </div>
+              <LearningDisplay 
+                data={data}
+                currentFrame={currentFrame}
+                currentSign={currentSign}
+              />
             )}
 
             {/* 웹캠 및 분류 결과 */}
-            <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-gray-800">따라하기</h3>
-
-              {/* 연결 상태 표시 */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : isConnecting ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
-                <span className="text-sm text-gray-600">
-                  {isConnected ? '연결됨' : isConnecting ? '연결 중...' : '연결 안됨'}
-                </span>
-                {isTransmitting && (
-                  <span className="text-sm text-blue-600">전송 중...</span>
-                )}
-              </div>
-
-              {/* 비디오 스트림 */}
-              <div className="relative">
-                <video
-                  ref={videoRef}
-                  className="w-full border rounded-lg bg-gray-100"
-                  autoPlay
-                  muted
-                  playsInline
-                />
-                <canvas
-                  ref={canvasRef}
-                  className="hidden"
-                />
-                {!state.isStreaming && (
-                  <div className="absolute inset-0 bg-gray-200 flex items-center justify-center rounded-lg">
-                    <div className="text-center">
-                      <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">카메라 초기화 중...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 분류 결과 */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                {currentResult ? (
-                  <>
-                    <div className="text-lg font-bold text-blue-600">
-                      {currentResult.prediction}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      신뢰도: {(currentResult.confidence * 100).toFixed(1)}%
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-sm text-gray-500 text-center">
-                    분류 결과를 기다리는 중...
-                  </div>
-                )}
-              </div>
-
-              {/* 문제 발생 시 새로고침 안내 */}
-              {!isConnected && !connectionError && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <RefreshCw className="h-4 w-4 text-yellow-600" />
-                    <span className="font-medium text-yellow-800">연결 중...</span>
-                  </div>
-                  <p className="text-sm text-yellow-700">
-                    서버에 연결하는 중입니다. 잠시만 기다려주세요.
-                  </p>
-                </div>
-              )}
-
-              {/* 수동 녹화 버튼 (학습 모드용) */}
-              {!isQuizMode && isConnected && state.isStreaming && (
-                <div className="flex justify-center space-x-4">
-                  {!isRecording && !feedback && (
-                    <>
-                      <Button 
-                        onClick={handleStartRecording}
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={!isTransmitting}
-                      >
-                        <Camera className="h-4 w-4 mr-2" />
-                        수어 시작하기
-                      </Button>
-                      <Button 
-                        onClick={handleNextSign}
-                        variant="outline"
-                        className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                      >
-                        건너뛰기
-                      </Button>
-                    </>
-                  )}
-                  
-                  {isRecording && (
-                    <>
-                      <Button disabled className="bg-red-600">
-                        <div className="animate-pulse flex items-center">
-                          <div className="w-3 h-3 bg-white rounded-full mr-2" />
-                          인식 중...
-                        </div>
-                      </Button>
-                      <Button 
-                        onClick={handleNextSign}
-                        variant="outline"
-                        className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                      >
-                        건너뛰기
-                      </Button>
-                    </>
-                  )}
-                  
-                  {feedback && (
-                    <div className="flex space-x-2">
-                      <Button onClick={handleRetry} variant="outline">
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        다시 시도
-                      </Button>
-                      <Button onClick={handleNextSign} className="bg-blue-600 hover:bg-blue-700">
-                        {feedback === 'correct' ? '다음 수어' : '건너뛰기'}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <WebcamSection 
+              isQuizMode={isQuizMode}
+              isConnected={isConnected}
+              isConnecting={isConnecting}
+              isTransmitting={isTransmitting}
+              state={state}
+              videoRef={videoRef}
+              canvasRef={canvasRef}
+              currentResult={currentResult}
+              connectionError={connectionError}
+              isRecording={isRecording}
+              feedback={feedback}
+              handleStartRecording={handleStartRecording}
+              handleNextSign={handleNextSign}
+              handleRetry={handleRetry}
+            />
           </div>
 
           {/* 피드백 표시 */}
           {feedback && (
             <div className="mt-8">
-              <FeedbackDisplay feedback={feedback} />
+              <FeedbackDisplay 
+                feedback={feedback} 
+                prediction={currentResult?.prediction}
+                onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
+              />
             </div>
           )}
         </div>

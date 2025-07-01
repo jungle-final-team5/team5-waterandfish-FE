@@ -1,14 +1,19 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, XCircle, Lightbulb } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface FeedbackDisplayProps {
   feedback: 'correct' | 'incorrect';
+  prediction?: string;
+  onComplete?: () => void;
 }
 
-const FeedbackDisplay = ({ feedback }: FeedbackDisplayProps) => {
+const FeedbackDisplay = ({ feedback, prediction, onComplete }: FeedbackDisplayProps) => {
   const isCorrect = feedback === 'correct';
   const [countdown, setCountdown] = useState(3);
+  const [waitingForNone, setWaitingForNone] = useState(false);
+  const [noneCountdown, setNoneCountdown] = useState(0);
+  const noneTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isCorrect) {
@@ -16,6 +21,8 @@ const FeedbackDisplay = ({ feedback }: FeedbackDisplayProps) => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
+            // 3초 경과 후 prediction 체크
+            checkPredictionAndComplete();
             return 0;
           }
           return prev - 1;
@@ -25,6 +32,77 @@ const FeedbackDisplay = ({ feedback }: FeedbackDisplayProps) => {
       return () => clearInterval(timer);
     }
   }, [isCorrect]);
+
+  const clearNoneTimer = () => {
+    if (noneTimerRef.current) {
+      clearInterval(noneTimerRef.current);
+      noneTimerRef.current = null;
+    }
+    setNoneCountdown(0);
+  };
+
+  const startNoneTimer = () => {
+    console.log('⏳ None이 2초 동안 연속으로 유지되는지 확인 중...');
+    clearNoneTimer(); // 기존 타이머 정리
+    
+    setNoneCountdown(2);
+    setWaitingForNone(false); // 타이머 시작 시 대기 상태 해제
+    
+    noneTimerRef.current = setInterval(() => {
+      setNoneCountdown((prev) => {
+        if (prev <= 1) {
+          console.log('✅ None이 2초 동안 연속으로 유지되었습니다. 다음으로 진행합니다.');
+          clearNoneTimer();
+          onComplete?.();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const checkPredictionAndComplete = () => {
+    if (prediction && prediction.toLowerCase() === 'none') {
+      // 이미 타이머가 실행 중이 아닐 때만 시작
+      if (!noneTimerRef.current) {
+        console.log('✅ Prediction이 None입니다. 2초 타이머를 시작합니다.');
+        startNoneTimer();
+      } else {
+        console.log('⏳ None 타이머가 이미 실행 중입니다.');
+      }
+    } else {
+      console.log('⏳ Prediction이 아직 None이 아닙니다. 대기 중...');
+      setWaitingForNone(true);
+    }
+  };
+
+  // prediction이 변경될 때마다 체크
+  useEffect(() => {
+    // 대기 중이거나 타이머 진행 중일 때 prediction 체크
+    if (waitingForNone || noneCountdown > 0) {
+      if (prediction && prediction.toLowerCase() === 'none') {
+        // 이미 타이머가 실행 중이 아닐 때만 시작
+        if (!noneTimerRef.current && waitingForNone) {
+          console.log('✅ Prediction이 None으로 변경되었습니다. 2초 타이머를 시작합니다.');
+          startNoneTimer();
+        } else if (noneTimerRef.current) {
+          console.log('⏳ None 타이머가 이미 실행 중입니다.');
+        }
+      } else if (prediction && prediction.toLowerCase() !== 'none') {
+        // None이 아닌 값으로 변경되면 타이머 리셋하고 다시 대기 상태로
+        console.log('❌ Prediction이 None이 아님으로 변경됨. 타이머를 리셋하고 대기 상태로 돌아갑니다.');
+        clearNoneTimer();
+        setWaitingForNone(true);
+      }
+    }
+  }, [prediction, waitingForNone, noneCountdown, onComplete]);
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      clearNoneTimer();
+    };
+  }, []);
 
   if (isCorrect) {
     return (
@@ -48,7 +126,7 @@ const FeedbackDisplay = ({ feedback }: FeedbackDisplayProps) => {
                   수어 동작을 정확하게 수행했습니다!
                 </p>
                 
-                {/* 카운트다운 */}
+                {/* 카운트다운 및 대기 상태 */}
                 {countdown > 0 ? (
                   <div className="flex items-center justify-center space-x-2">
                     <span className="text-sm text-green-600">다음 수어까지</span>
@@ -56,6 +134,18 @@ const FeedbackDisplay = ({ feedback }: FeedbackDisplayProps) => {
                       {countdown}
                     </div>
                     <span className="text-sm text-green-600">초</span>
+                  </div>
+                ) : noneCountdown > 0 ? (
+                  <div className="text-sm text-green-600">
+                    <div className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg animate-pulse mx-auto mb-2">
+                      {noneCountdown}
+                    </div>
+                    손을 그대로 유지하세요...
+                  </div>
+                ) : waitingForNone ? (
+                  <div className="text-sm text-green-600">
+                    <div className="animate-spin inline-block w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full mr-2"></div>
+                    손을 내려주세요...
                   </div>
                 ) : (
                   <div className="text-sm text-green-600">

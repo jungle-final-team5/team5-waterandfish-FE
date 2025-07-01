@@ -18,7 +18,7 @@ import NotFound from "./pages/NotFound";
 import AuthCallback from "./pages/AuthCallback";
 import TestPage from "./pages/TestPage";
 import { AuthProvider } from "@/hooks/useAuth";
-
+import LetterSession from "./pages/Session_letter";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -38,6 +38,7 @@ const App = () => (
             <Route path="/learn/category/:categoryId" element={<Chapters />} />
             <Route path="/learn/session/:categoryId/:chapterId/:sessionType" element={<Session />} />
             <Route path="/learn/:keyword" element={<Learn />} />
+            <Route path="/test/letter/:setType/:qOrs" element={<LetterSession />}/>
             <Route path="/review" element={<Review />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/profile" element={<Profile />} />

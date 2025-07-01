@@ -3,6 +3,7 @@ export interface Lesson {
   id: string;
   word: string;
   category: string;
+  type: 'letter' | 'word' | 'sentence';
   difficulty?: 'easy' | 'medium' | 'hard';
   videoUrl?: string;
   description?: string;

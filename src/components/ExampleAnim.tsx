@@ -104,7 +104,7 @@ const LandmarkViewerTSX = ({
   ];
 
   // 카메라 컨트롤 변수
-  const cameraInitPos: CameraPosition = { x: -0.388, y: 0.334, z: -0.655 };
+  const cameraInitPos: CameraPosition = { x: -0.408, y: 0.334, z: -0.855 };
   const cameraInitRot: CameraRotation = { x: 0, y: 0, z: 0 };
   const yawRef = useRef(-10.3 * Math.PI / 180);
   const pitchRef = useRef(178.7 * Math.PI / 180);
@@ -153,7 +153,7 @@ const LandmarkViewerTSX = ({
     const containerHeight = container.clientHeight;
 
     // 카메라 생성
-    cameraRef.current = new THREE.PerspectiveCamera(75, containerWidth / containerHeight, 0.001, 1000);
+    cameraRef.current = new THREE.PerspectiveCamera(65, containerWidth / containerHeight, 0.001, 1000);
     cameraRef.current.position.set(cameraInitPos.x, cameraInitPos.y, cameraInitPos.z);
     cameraRef.current.rotation.set(cameraInitRot.x, cameraInitRot.y, cameraInitRot.z);
     updateCameraDirection();
@@ -308,7 +308,6 @@ const LandmarkViewerTSX = ({
 
   const loadFrame = (frameIndex: number): void => {
     if (!data || !sceneRef.current) return;
-    console.log("frame is loading!");
     clearScene();
 
     // 랜드마크 회전 함수 (Y축 중심 시계방향 180도)
@@ -335,7 +334,7 @@ const LandmarkViewerTSX = ({
 
   return (
     <div style={styles.leftPanel}>
-      <div style={styles.panelTitle}>3D 랜드마크 뷰어 (TypeScript)</div>
+      
       <div style={styles.canvasContainer}>
         <canvas ref={canvasRef} style={styles.landmarkCanvas} id="landmark-canvas"></canvas>
       </div>
