@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "@/components/AxiosInstance";
+import { apiClient } from "@/services/api";
 
 interface StreakApiResponse {
   studyDates: string[];
@@ -17,10 +17,11 @@ export function useStreakData() {
     async function fetchStreak() {
       setLoading(true);
       try {
-        const res = await API.get<StreakApiResponse>("/user/daily-activity/streak");
-        setStudyDates(res.data.studyDates);
-        setCurrentStreak(res.data.currentStreak);
-        setLongestStreak(res.data.longestStreak);
+        const response = await apiClient.streaks.get();
+        const data = response.data as StreakApiResponse;
+        setStudyDates(data.studyDates);
+        setCurrentStreak(data.currentStreak);
+        setLongestStreak(data.longestStreak);
       } catch (e) {
         setStudyDates([]);
         setCurrentStreak(0);

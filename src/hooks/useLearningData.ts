@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import API from '@/components/AxiosInstance';
+import { apiClient } from '@/services/api';
 import { Category, Chapter, Lesson, QuizResult } from '@/types/learning';
 
 interface LearningProgress {
@@ -33,8 +33,9 @@ export const useLearningData = () => {
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const response = await API.get<Category[]>('/learning/categories');
-        setCategories(response.data);
+        const response = await apiClient.learning.getCategories();
+        const data = response.data as Category[];
+        setCategories(data);
       } catch (error) {
         setCategories([]);
       } finally {

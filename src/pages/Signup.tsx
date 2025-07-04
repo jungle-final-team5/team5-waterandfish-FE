@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import API from '../components/AxiosInstance';
+import { apiClient } from "@/services/api";
 
 function MailIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -45,7 +45,7 @@ export default function Signup() {
       return;
     }
     try {
-      await API.post('auth/signup', { 
+      await apiClient.auth.register({ 
         email, 
         nickname, 
         password: password   // password로 보내야 함
@@ -59,12 +59,12 @@ export default function Signup() {
 
   // Google 소셜 로그인
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
+    window.location.href = apiClient.auth.getGoogleAuthUrl();
   };
 
   // Kakao 소셜 로그인
   const handleKakaoLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/kakao`;
+    window.location.href = apiClient.auth.getKakaoAuthUrl();
   };
 
   return (

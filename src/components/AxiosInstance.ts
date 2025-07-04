@@ -50,8 +50,8 @@ API.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // 백엔드에서 자동으로 리프레시 토큰을 사용해 새 액세스 토큰 발급
-        await API.post('auth/refresh');
+        // 새로운 리프레시 엔드포인트 사용
+        await API.post('/api/v1/auth/refresh');
         processQueue(null);
 
         // 토큰 갱신 성공 시 원래 요청 재시도

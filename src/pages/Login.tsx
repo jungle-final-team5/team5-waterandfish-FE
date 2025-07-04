@@ -1,7 +1,7 @@
 import { useState } from "react";
-import API from '../components/AxiosInstance'
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { apiClient } from "@/services/api";
 
 function MailIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -31,7 +31,7 @@ export default function Login() {
     e.preventDefault();
     try {
       console.log('🔐 로그인 시도:', { email });
-      const response = await API.post('auth/signin', { email: email, password: pw });
+      const response = await apiClient.auth.login({ email, password: pw });
       
       console.log('📥 로그인 응답:', response.data);
       
@@ -70,12 +70,12 @@ export default function Login() {
 
   // Google 소셜 로그인
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
+    window.location.href = apiClient.auth.getGoogleAuthUrl();
   };
 
   // Kakao 소셜 로그인
   const handleKakaoLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/kakao`;
+    window.location.href = apiClient.auth.getKakaoAuthUrl();
   };
 
   return (

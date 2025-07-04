@@ -19,14 +19,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import API from '@/components/AxiosInstance';
+import { apiClient } from '@/services/api';
 
-// GET /user/profile 또는 /user/me
+// GET /api/v1/users/me
 interface UserProfile {
   handedness: string,
   nickname: string;
 }
-
 
 const Profile = () => {
   const [nickname, setNickname] = useState('사용자');
@@ -77,9 +76,10 @@ const Profile = () => {
   const fetchUserProfile = async () => {
     try {
       setIsLoading(true);
-      const response = await API.get<UserProfile>('/user/me');
-      setNickname(response.data.nickname);
-      setDominantHand(response.data.handedness === 'R' ? 'R' : 'L');
+      const response = await apiClient.users.getMe();
+      const userData = response.data as UserProfile;
+      setNickname(userData.nickname);
+      setDominantHand(userData.handedness === 'R' ? 'R' : 'L');
       
     } catch (error) {
       if (error.response?.status === 401) {
@@ -96,59 +96,55 @@ const Profile = () => {
     }
   };
 
-    useEffect(() => {
+  useEffect(() => {
     fetchUserProfile();
   }, []);
 
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-const handleProfileUpdate = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  if (newPassword && newPassword !== confirmPassword) {
-    toast({
-      title: "오류",
-      description: "새 비밀번호가 일치하지 않습니다.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  try {
-    // 닉네임만 변경
-    await API.put('/user/me', {
-      nickname: nickname,
-      handedness: dominantHand
-    });
-
-    // 닉네임을 localStorage에도 저장 (Home에서 반영되도록)
-    localStorage.setItem('nickname', nickname);
-
-    // 비밀번호 변경 요청 (입력된 경우만)
-    if (newPassword) {
-      await API.put('/user/password', {
-        currentPassword,
-        newPassword
+    if (newPassword && newPassword !== confirmPassword) {
+      toast({
+        title: "오류",
+        description: "새 비밀번호가 일치하지 않습니다.",
+        variant: "destructive",
       });
+      return;
     }
 
-    toast({
-      title: "성공",
-      description: "프로필이 성공적으로 업데이트되었습니다.",
-    });
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-  } catch (error) {
-    toast({
-      title: "오류",
-      description: error?.response?.data?.detail || "프로필 업데이트에 실패했습니다.",
-      variant: "destructive",
-    });
-  }
-};
+    try {
+      // 닉네임만 변경
+      await apiClient.users.updateMe({
+        nickname: nickname,
+        handedness: dominantHand
+      });
 
+      // 닉네임을 localStorage에도 저장 (Home에서 반영되도록)
+      localStorage.setItem('nickname', nickname);
 
-  
+      // 비밀번호 변경 요청 (입력된 경우만)
+      if (newPassword) {
+        await apiClient.users.updatePassword({
+          current_password: currentPassword,
+          new_password: newPassword
+        });
+      }
+
+      toast({
+        title: "성공",
+        description: "프로필이 성공적으로 업데이트되었습니다.",
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      toast({
+        title: "오류",
+        description: error?.response?.data?.detail || "프로필 업데이트에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // 회원 탈퇴(이메일 검증 포함)
   const handleAccountDelete = async () => {
@@ -171,9 +167,7 @@ const handleProfileUpdate = async (e: React.FormEvent) => {
     }
 
     try {
-      await API.delete('auth/delete-account', {
-        data: { email: deleteEmail }
-      } as any); // 타입 에러 방지용 as any
+      await apiClient.auth.deleteAccount(deleteEmail);
       toast({
         title: "탈퇴 완료",
         description: "계정이 성공적으로 삭제되었습니다.",

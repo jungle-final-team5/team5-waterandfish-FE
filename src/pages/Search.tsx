@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Search, ArrowLeft } from 'lucide-react';
 import { useLearningData } from '@/hooks/useLearningData';
-import API from '@/components/AxiosInstance';
+import { apiClient } from '@/services/api';
+
 interface SearchResult {
   lesson_id: string;
   sign_text: string;
@@ -22,9 +23,8 @@ const SearchPage = () => {
 
   const fetchSearchResults = async (query: string) => {
     try {
-      const { data } = await API.get<SearchResult[]>("/search", {
-        params: { q: query, k: 10 },
-      });
+      const response = await apiClient.search.lessons(query, 10);
+      const data = response.data as SearchResult[];
       setSearchResults(data);
       setOpen(data.length > 0);
     } catch {

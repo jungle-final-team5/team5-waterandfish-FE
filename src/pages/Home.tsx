@@ -25,7 +25,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useBadgeSystem } from '@/hooks/useBadgeSystem';
 import { useNotificationHistory } from '@/hooks/useNotificationHistory';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import API from '@/components/AxiosInstance';
+import { apiClient } from '@/services/api';
 import { useStreakData } from "@/hooks/useStreakData";
 
 // 최근 학습 정보 타입
@@ -58,7 +58,7 @@ const Home = () => {
   const { showStreakAchievement } = useNotifications();
   const { learningStats } = useBadgeSystem();
   const { unreadCount } = useNotificationHistory();
-    const { isOnboardingActive, currentStep, nextStep, previousStep, skipOnboarding, completeOnboarding } = useOnboarding();
+  const { isOnboardingActive, currentStep, nextStep, previousStep, skipOnboarding, completeOnboarding } = useOnboarding();
   const { currentStreak } = useStreakData();
   
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
@@ -92,15 +92,17 @@ const Home = () => {
     const storedNickname = localStorage.getItem('nickname');
     if (storedNickname) setNickname(storedNickname);
 
-    API.get<RecentLearning>('/api/learning/recent-learning')
-      .then(res => {
-        if (res.data && res.data.category && res.data.chapter) {
-          setRecentLearning(res.data);
-        } else {
-          setRecentLearning(null);
-        }
-      })
-      .catch(() => setRecentLearning(null));
+    // 최근 학습 정보 가져오기 (임시로 비활성화)
+    // apiClient.learning.getRecentLearning()
+    //   .then(res => {
+    //     const data = res.data as RecentLearning;
+    //     if (data && data.category && data.chapter) {
+    //       setRecentLearning(data);
+    //     } else {
+    //       setRecentLearning(null);
+    //     }
+    //   })
+    //   .catch(() => setRecentLearning(null));
   }, []);
 
   // 진도율 데이터 가져오기
@@ -108,8 +110,9 @@ const Home = () => {
     const fetchProgressOverview = async () => {
       try {
         setProgressLoading(true);
-        const response = await API.get<ProgressOverview>('/api/learning/progress/overview');
-        setProgressOverview(response.data);
+        const response = await apiClient.learning.getProgress();
+        const data = response.data as ProgressOverview;
+        setProgressOverview(data);
       } catch (error) {
         console.error('진도율 데이터 가져오기 실패:', error);
         setProgressOverview(null);
@@ -186,7 +189,7 @@ const Home = () => {
     try {
       console.log('🚪 로그아웃 시도...');
       // 백엔드 로그아웃 API 호출 (쿠키 삭제)
-      const response = await API.post('auth/logout');
+      const response = await apiClient.auth.logout();
       console.log('✅ 로그아웃 API 성공:', response.data);
     } catch (error) {
       console.error('❌ 로그아웃 API 호출 실패:', error);
@@ -195,16 +198,15 @@ const Home = () => {
     
     // localStorage 클리어
     localStorage.clear();
-    console.log('�� localStorage 클리어 완료');
+    console.log('🧹 localStorage 클리어 완료');
     
     toast({
-      title: "로그아웃",
+      title: "로그아웃 완료",
       description: "성공적으로 로그아웃되었습니다.",
     });
     
-    setTimeout(() => {
-      navigate('/');
-    }, 1000);
+    // 로그인 페이지로 이동
+    navigate('/login');
   };
 
   const currentTime = new Date().getHours();
@@ -237,7 +239,7 @@ const Home = () => {
   useEffect(() => {
     const fetchBadgeCount = async () => {
       try {
-        const res = await API.get('/badge/earned');
+        const res = await apiClient.badges.getEarned();
         setBadgeCount(Array.isArray(res.data) ? res.data.length : 0);
       } catch (e) {
         setBadgeCount(0);
