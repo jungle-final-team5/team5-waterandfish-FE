@@ -43,52 +43,8 @@ export const useBadgeSystem = () => {
     reviewsCompleted: 50,
     fastAnswers: 25
   });
-
-  const badges: Badge[] = [
-    {
-      id: 1,
-      name: "첫 학습 완료",
-      description: "첫 번째 수어를 성공적으로 학습했습니다",
-      condition: (stats) => stats.totalLessonsCompleted >= 1,
-      earned: true,
-      earnedDate: "2024-01-15"
-    },
-    {
-      id: 2,
-      name: "일주일 연속 학습",
-      description: "7일 연속으로 학습을 완료했습니다",
-      condition: (stats) => stats.consecutiveDays >= 7,
-      earned: true,
-      earnedDate: "2024-01-20"
-    },
-    {
-      id: 3,
-      name: "퀴즈 마스터",
-      description: "퀴즈에서 10번 연속 정답을 맞혔습니다",
-      condition: (stats) => stats.correctAnswers >= 10,
-      earned: true,
-      earnedDate: "2024-01-25"
-    },
-    {
-      id: 4,
-      name: "번개 학습자",
-      description: "하루에 20개 이상의 수어를 학습했습니다",
-      condition: (stats) => stats.totalLessonsCompleted >= 20,
-      earned: true,
-      earnedDate: "2024-01-18"
-    },
-    {
-      id: 5,
-      name: "복습 마스터",
-      description: "복습 기능을 50회 사용했습니다",
-      condition: (stats) => stats.reviewsCompleted >= 50,
-      earned: true,
-      earnedDate: "2024-02-05"
-    }
-  ];
-
-  // API를 통해 뱃지 확인 및 획득
-  const checkBadgesWithAPI = useCallback(async (action: string) => {
+  
+  const checkBadges = useCallback(async (action: string) => {
     setLoading(true);
     try {
     const response = await API.post<BadgeCheckResponse>('/badge/check-badges', {
@@ -117,15 +73,7 @@ export const useBadgeSystem = () => {
     }
   }, [showBadgeEarned]);
 
-  const updateLearningProgress = useCallback((type: 'lesson' | 'chapter' | 'review' | 'fast_answer', amount: number = 1) => {
-    checkBadgesWithAPI(type);
-  }, [checkBadgesWithAPI]);
-
   return {
-    badges,
-    learningStats,
-    updateLearningProgress,
-    checkBadgesWithAPI,
-    loading
+    checkBadges
   };
 };

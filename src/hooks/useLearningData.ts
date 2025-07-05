@@ -33,8 +33,8 @@ export const useLearningData = () => {
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const response = await API.get<Category[]>('/learning/categories');
-        setCategories(response.data);
+        const response = await API.get<{ success: boolean; data: Category[]; message: string }>('/category');
+        setCategories(response.data.data);
       } catch (error) {
         setCategories([]);
       } finally {

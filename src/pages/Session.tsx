@@ -15,6 +15,7 @@ import { useLearningData } from '@/hooks/useLearningData';
 import { Lesson } from '@/types/learning';
 import { signClassifierClient, ClassificationResult } from '../services/SignClassifierClient';
 import { useVideoStream } from '../hooks/useVideoStream';
+import { useBadgeSystem } from '@/hooks/useBadgeSystem';
 import SessionHeader from '@/components/SessionHeader';
 import QuizDisplay from '@/components/QuizDisplay';
 import LearningDisplay from '@/components/LearningDisplay';
@@ -24,6 +25,7 @@ import HandDetectionIndicator from '@/components/HandDetectionIndicator';
 import API from '@/components/AxiosInstance';
 
 const Session = () => {
+  
   const [isConnected, setIsConnected] = useState(false);
   const [isTransmitting, setIsTransmitting] = useState(false);
   const [currentResult, setCurrentResult] = useState<ClassificationResult | null>(null);
@@ -38,8 +40,8 @@ const Session = () => {
   const navigate = useNavigate();
   const { categoryId, chapterId, sessionType } = useParams();
   const { getCategoryById, getChapterById, addToReview, markSignCompleted, markChapterCompleted, markCategoryCompleted, getChapterProgress } = useLearningData();
-  
-  const [data, setData] = useState(null);
+  const { checkBadges } = useBadgeSystem();
+  const [animData, setAnimData] = useState(null);
   const [currentFrame, setCurrentFrame] = useState(0);
 
   const [currentSignIndex, setCurrentSignIndex] = useState(0);
@@ -68,55 +70,49 @@ const Session = () => {
 
   const signs = chapter?.signs;
   useEffect(() => {
-
-  API.get(`/learning/chapters/${chapterId}`)
-    .then(res => {
-      const type = (res.data as { type: string }).type;
-      if (type == '자음') {
-        navigate("/test/letter/consonant/study");
-      } else if (type == '모음') {
-        navigate("/test/letter/vowel/study");
-      }
-      else {
-        localStorage.removeItem("studyword");
-        setCurrentSignIndex(0);
-        setQuizResults([]);
-        setFeedback(null);
-      }
-    })
-    .catch(err => {
-      console.error('타입 조회 실패:', err);
-      navigate("/not-found");
-    });
-    }, [chapterId, categoryId, sessionType, navigate]);
+    API.get<{ success: boolean; data: { type: string }; message: string }>(`/learn/chapter/${chapterId}`)
+      .then(res => {
+        const type = res.data.data.type;
+        if (type == '자음') {
+          navigate("/test/letter/consonant/study");
+        } else if (type == '모음') {
+          navigate("/test/letter/vowel/study");
+        }
+        else {
+          localStorage.removeItem("studyword");
+          setCurrentSignIndex(0);
+          setQuizResults([]);
+          setFeedback(null);
+        }
+      })
+      .catch(err => {
+        console.error('타입 조회 실패:', err);
+        navigate("/not-found");
+      });
+  }, [chapterId, categoryId, sessionType, navigate]);
   const sendQuizResult = async () =>{
     try {
       if (!quizResults.length) return;
-
       const simplifiedResults = quizResults.map(({ signId, correct }) => ({
         signId,
         correct,
       }));
-
-      await API.post('/learning/result/session', simplifiedResults);
+      await API.post(`/quiz/chapter/${chapterId}/submit`, simplifiedResults);
     } catch (error) {
       console.error("퀴즈 결과 전송 실패:", error);
     }
   }
   const sendStudyResult = async () =>{
     try {
-    // ✅ 로컬스토리지에서 completedSigns 가져오기
-    const stored = localStorage.getItem("studyword");
-    if (!stored) return;
-
-    const stwords: string[] = JSON.parse(stored);
-
-    // ✅ 보낼 형식이 단순히 ID 배열이면 그대로 전송
-    await API.post('/learning/study/session', stwords);
-    localStorage.removeItem("studyword");
-  } catch (error) {
-    console.error("학습 결과 전송 실패:", error);
-  }
+      const stored = localStorage.getItem("studyword");
+      if (!stored) return;
+      const stwords: string[] = JSON.parse(stored);
+      await API.post(`/learn/chapter/${chapterId}/progress`, stwords);
+      localStorage.removeItem("studyword");
+    checkBadges(""); // 레슨, 즉 단위 단위에 대한 적용
+    } catch (error) {
+      console.error("학습 결과 전송 실패:", error);
+    }
   }
   // 서버 연결 시도 함수
   const attemptConnection = async (attemptNumber: number = 1): Promise<boolean> => {
@@ -496,9 +492,9 @@ useEffect(() => {
 
   // 애니메이션 재생/정지 처리
   useEffect(() => {
-    if (isPlaying && data) {
+    if (isPlaying && animData) {
       animationIntervalRef.current = setInterval(() => {
-        if (currentFrame < data.pose.length - 1) {
+        if (currentFrame < animData.pose.length - 1) {
           setCurrentFrame(prev => prev + 1);
         } else {
           setCurrentFrame(0);
@@ -516,7 +512,7 @@ useEffect(() => {
         clearInterval(animationIntervalRef.current);
       }
     };
-  }, [isPlaying, animationSpeed, data, currentFrame]);
+  }, [isPlaying, animationSpeed, animData, currentFrame]);
 
 const loadData = useCallback(async (videoUrl: string) => {
   if (!videoUrl) {
@@ -525,9 +521,12 @@ const loadData = useCallback(async (videoUrl: string) => {
   }
 
   try {
+    // TODO : result에서 백엔드로 가져오도록 수정
     const response = await fetch(`/result/${videoUrl}`);
+    
+
     const landmarkData = await response.json();
-    setData(landmarkData);
+    setAnimData(landmarkData);
   } catch (error) {
     console.error('데이터 로드 실패:', error);
   }
@@ -624,22 +623,6 @@ const loadData = useCallback(async (videoUrl: string) => {
     }
     // eslint-disable-next-line
   }, [sessionComplete]);
-
-  useEffect(() => {
-    API.get(`/learning/chapters/${chapterId}`)
-      .then(res => {
-        const type = (res.data as { type: string }).type;
-        if (type == '자음') {
-          navigate("/test/letter/consonant/study");
-        } else if (type == '모음') {
-          navigate("/test/letter/vowel/study");
-        }
-      })
-      .catch(err => {
-        console.error('타입 조회 실패:', err);
-        navigate("/not-found");
-      });
-  }, [chapterId, categoryId, sessionType, navigate]);
 
   if (connectionError) {
     return (
@@ -793,7 +776,7 @@ const loadData = useCallback(async (videoUrl: string) => {
               />
             ) : (
               <LearningDisplay 
-                data={data}
+                data={animData}
                 currentFrame={currentFrame}
                 currentSign={currentSign}
               />

@@ -45,7 +45,7 @@ const ProgressModal = ({ isOpen, onClose }: ProgressModalProps) => {
       const fetchProgressOverview = async () => {
         try {
           setLoading(true);
-          const response = await API.get<ProgressOverview>('/learning/progress/overview');
+          const response = await API.get<ProgressOverview>('/progress/overview');
           setProgressOverview(response.data);
         } catch (error) {
           setProgressOverview(null);
@@ -93,7 +93,7 @@ const ProgressModal = ({ isOpen, onClose }: ProgressModalProps) => {
     );
   }
 
-  const completedCategories = progressOverview.categories.filter(cat => cat.status === 'completed').length;
+  const completedCategories = (progressOverview.categories ?? []).filter(cat => cat.status === 'completed').length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -146,10 +146,10 @@ const ProgressModal = ({ isOpen, onClose }: ProgressModalProps) => {
               카테고리별 상세 진도
             </h4>
             <div className="text-sm text-gray-500">
-              총 {progressOverview.categories.length}개 카테고리
+              총 {(progressOverview.categories ?? []).length}개 카테고리
             </div>
           </div>
-          {progressOverview.categories.map((category) => (
+          {(progressOverview.categories ?? []).map((category) => (
             <div 
               key={category.id} 
               className={`bg-white border-2 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]`}

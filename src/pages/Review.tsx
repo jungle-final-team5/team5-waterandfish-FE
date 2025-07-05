@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,12 +22,16 @@ const Review = () => {
       setError(null);
 
       try {
-        const res = await API.get(`/learning/progress/failures-by-username/${username}`);
+        const res = await API.get(`/progress/lessons/failures/${username}`);
         console.log("응답 데이터:", res.data);
         setReviewSigns(res.data as Lesson[]);
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError("데이터를 불러오는 중 오류가 발생했습니다.");
-        console.error(err);
+        if (err instanceof Error) {
+          console.error(err.message);
+        } else {
+          console.error(err);
+        }
       } finally {
         setLoading(false);
       }

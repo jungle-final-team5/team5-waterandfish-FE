@@ -17,10 +17,10 @@ export function useStreakData() {
     async function fetchStreak() {
       setLoading(true);
       try {
-        const res = await API.get<StreakApiResponse>("/user/daily-activity/streak");
-        setStudyDates(res.data.studyDates);
-        setCurrentStreak(res.data.currentStreak);
-        setLongestStreak(res.data.longestStreak);
+        const res = await API.get<{ success: boolean; data: StreakApiResponse }>("/attendance/streak");
+        setStudyDates(res.data.data.studyDates);
+        setCurrentStreak(res.data.data.currentStreak);
+        setLongestStreak(res.data.data.longestStreak);
       } catch (e) {
         setStudyDates([]);
         setCurrentStreak(0);

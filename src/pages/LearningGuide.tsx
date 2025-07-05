@@ -16,12 +16,23 @@ import { useLearningData } from '@/hooks/useLearningData';
 import WebcamView from '@/components/WebcamView';
 
 const LearningGuide = () => {
-  const { categoryId, chapterId, sessionType } = useParams();
+  const { categoryId: paramCategoryId, chapterId, sessionType } = useParams();
   const navigate = useNavigate();
-  const { getCategoryById, getChapterById } = useLearningData();
+  const { getCategoryById, getChapterById, categories } = useLearningData();
 
-  const category = getCategoryById(categoryId || '');
-  const chapter = getChapterById(categoryId || '', chapterId || '');
+  // categoryId가 없으면 categories에서 chapterId로 categoryId를 추출
+  let categoryId = paramCategoryId;
+  if (!categoryId && chapterId && categories.length > 0) {
+    for (const cat of categories) {
+      if (cat.chapters.some(chap => chap.id === chapterId)) {
+        categoryId = cat.id;
+        break;
+      }
+    }
+  }
+
+  const category = categoryId ? getCategoryById(categoryId) : undefined;
+  const chapter = (categoryId && chapterId) ? getChapterById(categoryId, chapterId) : undefined;
 
   if (!category || !chapter) {
     return (

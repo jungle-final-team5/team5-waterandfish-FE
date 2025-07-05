@@ -22,7 +22,7 @@ interface ApiBadge {
   id: number;
   name: string;
   description: string;
-  icon_name: string;
+  icon_url: string;
   color: string;
 }
 
@@ -88,18 +88,17 @@ const BadgeModal = ({ isOpen, onClose }: BadgeModalProps) => {
   
   // 뱃지와 획득 정보 비교 함수
   const compareBadgesWithEarned = (allBadges: ApiBadge[], earnedBadges: EarnedBadge[]): BadgeType[] => {
-    
     return allBadges.map(badge => {
       const earnedBadge = earnedBadges.find(earned => earned.badge_id === badge.id);
       
       const result = {
         ...badge,
-        icon: getIconForBadge(badge.icon_name || 'trophy'),
+        icon: getIconForBadge(badge.icon_url || 'trophy'),
         earned: !!earnedBadge,
         earnedDate: earnedBadge ? earnedBadge.acquire : null
         
       };
-      
+
       return result;
     });
   };
@@ -113,7 +112,6 @@ const BadgeModal = ({ isOpen, onClose }: BadgeModalProps) => {
     try {
       // 1. 모든 뱃지 목록 가져오기
       const allBadgesResponse = await API.get<ApiBadge[]>('/badge/');
-      
       // 2. 사용자가 획득한 뱃지 목록 가져오기
       const earnedBadgesResponse = await API.get<EarnedBadge[]>('/badge/earned');
       setEarnedData(earnedBadgesResponse.data);
@@ -190,7 +188,6 @@ const BadgeModal = ({ isOpen, onClose }: BadgeModalProps) => {
                     <p className="text-sm text-gray-600 mb-2">{badge.description}</p>
                     <p className="text-xs text-gray-500">
                       획득일: {formatDate(badge.earnedDate)}
-                      {badge.earnedDate && <span className="text-xs text-gray-400 ml-1">(원래값: {badge.earnedDate})</span>}
                     </p>
                   </div>
                 </div>

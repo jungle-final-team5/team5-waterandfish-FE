@@ -73,10 +73,23 @@ const Learn = () => {
     }
   };
 
+  // 예시: 오늘의 추천 수어/검색결과 리스트 (실제 데이터는 props/context로 받을 수 있음)
+  const exampleSigns = [
+    { word: '안녕하세요', category: '일상 인사말' },
+    { word: '감사합니다', category: '일상 인사말' },
+    { word: '사랑해요', category: '감정 표현' },
+    { word: '미안합니다', category: '일상 인사말' },
+    { word: '잘 지내세요', category: '일상 인사말' },
+  ];
+
+  // 현재 keyword에 맞는 카테고리 찾기
+  const selectedSign = exampleSigns.find(sign => sign.word === keyword);
+  const category = selectedSign ? selectedSign.category : '기타';
+
   // 샘플 학습 데이터
   const learningData = {
-    category: '일상 인사말',
-    keyword: keyword || '안녕하세요',
+    category: category,
+    keyword: keyword,
     steps: [
       {
         title: '예시 보기',
@@ -294,7 +307,7 @@ const Learn = () => {
                 <Button onClick={() => navigate('/home')} variant="outline">
                   홈으로 돌아가기
                 </Button>
-                <Button onClick={() => navigate(`/category/${learningData.categoryId}/chapters`)} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => navigate('/category')} className="bg-blue-600 hover:bg-blue-700">
                   다른 학습하기
                 </Button>
               </div>
@@ -302,6 +315,25 @@ const Learn = () => {
           )}
         </div>
       </main>
+
+      {/* 오늘의 추천 수어/검색결과 예시 리스트 */}
+      <div className="max-w-2xl mx-auto mt-12">
+        <h3 className="text-lg font-bold mb-4">오늘의 추천 수어 / 검색 결과</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {exampleSigns.map(sign => (
+            <Button
+              key={sign.word}
+              variant="outline"
+              onClick={() => navigate(`/learn/word/${encodeURIComponent(sign.word)}`)}
+              className="h-auto p-3 hover:bg-violet-50 border-gray-200"
+            >
+              <div className="text-center">
+                <div className="font-medium text-gray-800">{sign.word}</div>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
