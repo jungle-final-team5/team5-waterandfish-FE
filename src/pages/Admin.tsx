@@ -209,7 +209,7 @@ const Admin = () => {
             const chapterId = (chapterRes.data as any).id;// ✅ ObjectId 문자열
             addChapter(selectedCategoryId, chapterData,chapterId);
             const lessonIds = chapterData.signs.map(sign => sign.id);
-            await API.post("/learning/connect/lesson",{"chapter":chapterId, "lesson": lessonIds});
+            await API.post(`/${chapterId}/lessons/connect`,{"lesson": lessonIds});
           }
           handleChapterModalClose();
         }}

@@ -36,7 +36,7 @@ export const ChapterModal: React.FC<ChapterModalProps> = ({
   });
   useEffect(() => {
     if (open) {
-      API.get<{ lessons: Lesson[] }>('/learning/lesson/all')
+      API.get<{ lessons: Lesson[] }>('/lesson')
         .then(res => {
           if (Array.isArray(res.data.lessons)) {
             setAllSigns(res.data.lessons);

@@ -28,7 +28,7 @@ const LetterSession = () => {
 
     try {
       await API.post(
-        'learning/result/letter',
+        'study/result/letter',
         {
           passed: passedLetters,
           failed: failedLetters,
@@ -41,6 +41,26 @@ const LetterSession = () => {
       // 선택: localStorage 초기화
       localStorage.removeItem('passed');
       localStorage.removeItem('failed');
+    } catch (error) {
+      console.error("결과 전송 실패", error);
+    }
+  };
+  const sendstudyResult = async () => {
+    const checkedLetters = JSON.parse(localStorage.getItem('checked') || '[]');
+
+    try {
+      await API.post(
+        '/study/letter',
+        {
+          checked: checkedLetters
+        },
+        {
+          withCredentials: true, // ✅ 쿠키 포함
+        }
+      );
+      console.log("결과 전송 완료");
+      // 선택: localStorage 초기화
+      localStorage.removeItem('checked');
     } catch (error) {
       console.error("결과 전송 실패", error);
     }
@@ -202,10 +222,10 @@ const LetterSession = () => {
           (landmarks[0].y - landmarks[9].y) ** 2 +
           (landmarks[0].x - landmarks[9].x) ** 2
         );
-
+        const handedness = results.multiHandedness?.[0]?.label || "Unknown";
         if (handvc > 0.13 && handvc <= 0.5) {
           drawLandmarks(canvasCtx, landmarks, canvasElement);
-          const gesture = detectGesture(landmarks);
+          const gesture = detectGesture(landmarks,handedness);
           if (gesture) {
             resultElement.textContent = `🖐️ ${gesture}`;
             ges.current = gesture;
@@ -309,7 +329,7 @@ const LetterSession = () => {
                       결과 저장
                     </Button>
                   ) : (
-                    <Button className="mt-4" onClick={() => navigate('/category')}>
+                    <Button className="mt-4" onClick={() => sendstudyResult()}>
                       카테고리로
                     </Button>
                   )
