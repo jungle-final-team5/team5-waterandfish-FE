@@ -246,7 +246,7 @@ const LetterSession = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={() => navigate('/learn')} className="hover:bg-blue-50">
+              <Button variant="ghost" onClick={() => navigate(-1)} className="hover:bg-blue-50">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 돌아가기
               </Button>
@@ -274,7 +274,7 @@ const LetterSession = () => {
               </CardHeader>
               <CardContent>
                 <div ref={decref} className="text-5xl text-center font-bold" />
-                <div ref={timeref} className="text-center text-gray-600 mt-2" />
+                <div ref={timeref} className="text-center text-gray-600 mt-2 text-3xl " />
                 <div ref={pileref} className="text-center text-3xl mt-4" />
               </CardContent>
             </Card>

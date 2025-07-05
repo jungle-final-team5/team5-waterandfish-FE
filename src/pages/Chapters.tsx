@@ -143,11 +143,24 @@ const Chapters = () => {
                   </div>
                   <div className="flex space-x-3 items-center">
                     <Button
-                      onClick={() => startChapterProgress(
+                      onClick={() => {if(chapter.title == "자음"){
+                        startChapterProgress(
+                        chapter.id,
+                        `/test/letter/consonant/study`,
+                        lessonIds
+                      )}else if(chapter.title == "모음"){
+                        startChapterProgress(
+                        chapter.id,
+                        `/test/letter/vowel/study`,
+                        lessonIds)
+                      }else{
+                        startChapterProgress(
                         chapter.id,
                         `/learn/session/${categoryId}/${chapter.id}/learning`,
                         lessonIds
                       )}
+                      }}
+                      
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <Play className="h-4 w-4 mr-2" />
@@ -156,11 +169,23 @@ const Chapters = () => {
                     {(chapterStatus === 'study' || chapterStatus === 'quiz_wrong' || chapterStatus === 'reviewed') && (
                       <Button
                         variant="outline"
-                        onClick={() => startChapterProgress(
-                          chapter.id,
-                          `/learn/session/${categoryId}/${chapter.id}/quiz`,
-                          lessonIds
-                        )}
+                        onClick={() => {if(chapter.title == "자음"){
+                        startChapterProgress(
+                        chapter.id,
+                        `/test/letter/consonant/quiz`,
+                        lessonIds
+                      )}else if(chapter.title == "모음"){
+                        startChapterProgress(
+                        chapter.id,
+                        `/test/letter/vowel/quiz`,
+                        lessonIds)
+                      }else{
+                        startChapterProgress(
+                        chapter.id,
+                        `/learn/session/${categoryId}/${chapter.id}/quiz`,
+                        lessonIds
+                      )}
+                      }}
                       >
                         퀴즈 풀기
                       </Button>
