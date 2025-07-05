@@ -7,46 +7,43 @@ import { ArrowLeft, FileText, MessageSquare, Play, CheckCircle, RotateCcw } from
 import { useLearningData } from '@/hooks/useLearningData';
 import { useEffect, useRef, useState } from 'react';
 import {Lesson,Chapter,Category} from '../types/learning';
+import { useBadgeSystem } from '@/hooks/useBadgeSystem';
 import API from '@/components/AxiosInstance';
 
 // 챕터별 상태 계산 함수
-function getChapterStatus(chapter: any) {
-  const statuses = (chapter.signs || []).map((sign: any) => sign.status);
-  if (statuses.length === 0) return 'not_started';
-  if (statuses.every(s => s === 'reviewed')) return 'reviewed';
-  if (statuses.some(s => s === 'quiz_wrong')) return 'quiz_wrong';
-  if (statuses.some(s => s === 'study')) return 'study';
+function getChapterStatus(chapter: Chapter) {
+  // TODO: 실제 status 계산 로직이 필요하다면 signs의 다른 필드나 별도 상태 관리 필요
   return 'not_started';
 }
 
 const Chapters = () => {
+  const { checkBadges } = useBadgeSystem();
   const navigate = useNavigate();
   const { categoryId } = useParams();
   const [categoryData, setCategoryData] = useState<Category | null>(null);
   const updateRecentLearning = async (lessonIds: string[]) => {
     try {
-      await API.post('/learning/progress/lesson/event', { lesson_ids: lessonIds });
+      await API.post('/review/mark-reviewed', { lesson_ids: lessonIds });
     } catch (err) {
       console.error('최근학습 이벤트 기록 실패:', err);
     }
   };
-  const startChapterProgress = async (chapterId: string, path: string, lessonIds: string[]) => {
+  // 챕터 학습/퀴즈 시작 시 최근 학습 반영 (user_id를 body에 포함)
+  const handleStartChapter = async (chapterId: string, lessonIds: string[], path: string) => {
     try {
-      await API.post('learning/progress/chapter/set', {
-        chapid: chapterId,
-      });
-      await updateRecentLearning(lessonIds);
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user._id;
+      await API.post('/progress/lessons/events', { user_id: userId, lesson_ids: lessonIds });
       navigate(path);
     } catch (err) {
-      console.error('프로그레스 초기화 실패:', err);
-      alert('학습을 시작할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      console.error('최근학습 이벤트 기록 실패:', err);
+      navigate(path); // 실패해도 이동
     }
   };
   useEffect(() => {
     if (!categoryId) return;
-
-    API.get<Category>(`/learning/chapter/${categoryId}`)
-      .then(res => setCategoryData(res.data))
+    API.get<{ success: boolean; data: Category; message: string }>(`/category/${categoryId}/chapters`)
+      .then(res => setCategoryData(res.data.data))
       .catch(err => console.error('카테고리 정보 불러오기 실패:', err));
   }, [categoryId]);
   const isCompleted = useRef(false);
@@ -61,7 +58,7 @@ const Chapters = () => {
     );
   }
 
-  const sortedChapters = (categoryData.chapters as any[]).slice().sort((a, b) => a.order_index - b.order_index);
+  const sortedChapters = (categoryData.chapters as Chapter[]).slice();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -90,7 +87,7 @@ const Chapters = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="space-y-6">
           {sortedChapters.map((chapter, index) => {
-            const lessonIds = (chapter.signs || []).map((lesson: any) => lesson.id);
+            const lessonIds = (chapter.signs || []).map((lesson: Lesson) => lesson.id);
             const chapterStatus = getChapterStatus(chapter);
             return (
               <Card key={chapter.id} className="hover:shadow-lg transition-shadow">
@@ -143,24 +140,11 @@ const Chapters = () => {
                   </div>
                   <div className="flex space-x-3 items-center">
                     <Button
-                      onClick={() => {if(chapter.title == "자음"){
-                        startChapterProgress(
+                      onClick={() => handleStartChapter(
                         chapter.id,
-                        `/test/letter/consonant/study`,
-                        lessonIds
-                      )}else if(chapter.title == "모음"){
-                        startChapterProgress(
-                        chapter.id,
-                        `/test/letter/vowel/study`,
-                        lessonIds)
-                      }else{
-                        startChapterProgress(
-                        chapter.id,
-                        `/learn/session/${categoryId}/${chapter.id}/learning`,
-                        lessonIds
+                        lessonIds,
+                        `/learn/chapter/${chapter.id}/guide`
                       )}
-                      }}
-                      
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <Play className="h-4 w-4 mr-2" />
@@ -169,23 +153,11 @@ const Chapters = () => {
                     {(chapterStatus === 'study' || chapterStatus === 'quiz_wrong' || chapterStatus === 'reviewed') && (
                       <Button
                         variant="outline"
-                        onClick={() => {if(chapter.title == "자음"){
-                        startChapterProgress(
-                        chapter.id,
-                        `/test/letter/consonant/quiz`,
-                        lessonIds
-                      )}else if(chapter.title == "모음"){
-                        startChapterProgress(
-                        chapter.id,
-                        `/test/letter/vowel/quiz`,
-                        lessonIds)
-                      }else{
-                        startChapterProgress(
-                        chapter.id,
-                        `/learn/session/${categoryId}/${chapter.id}/quiz`,
-                        lessonIds
-                      )}
-                      }}
+                        onClick={() => handleStartChapter(
+                          chapter.id,
+                          lessonIds,
+                          `/learn/chapter/${chapter.id}/guide`
+                        )}
                       >
                         퀴즈 풀기
                       </Button>
@@ -201,12 +173,6 @@ const Chapters = () => {
                         <RotateCcw className="h-4 w-4 mr-2" />
                         복습하기
                       </Button>
-                    )}
-                    {chapterStatus === 'reviewed' && false && (
-                      <Badge className="bg-green-500 text-white text-xs flex items-center">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        완료
-                      </Badge>
                     )}
                   </div>
                 </CardContent>
