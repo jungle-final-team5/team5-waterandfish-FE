@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, BookOpen, CheckCircle } from 'lucide-react';
-import { useLearningData } from '@/hooks/useLearningData';
+// import { useLearningData } from '@/hooks/useLearningData';
 import { useEffect, useRef, useState } from 'react';
 import API from '@/components/AxiosInstance';
 import { Category } from '@/types/learning';

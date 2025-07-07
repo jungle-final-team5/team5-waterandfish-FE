@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, FileText, MessageSquare, Play, CheckCircle, RotateCcw } from 'lucide-react';
-import { useLearningData } from '@/hooks/useLearningData';
+// import { useLearningData } from '@/hooks/useLearningData';
 import { useEffect, useRef, useState } from 'react';
 import {Lesson,Chapter,Category} from '../types/learning';
 import { useBadgeSystem } from '@/hooks/useBadgeSystem';
@@ -140,11 +140,19 @@ const Chapters = () => {
                   </div>
                   <div className="flex space-x-3 items-center">
                     <Button
-                      onClick={() => handleStartChapter(
+                      onClick={() => {
+                        if(chapter.title == "자음"){
+                          const signIds = chapter.signs.map((sign: any) => sign.id);
+                          handleStartChapter(chapter.id,signIds,"/test/letter/consonant/study");
+                        }else if(chapter.title == "모음"){
+                          const signIds = chapter.signs.map((sign: any) => sign.id);
+                          handleStartChapter(chapter.id,signIds,"/test/letter/vowel/study");
+                        }else{handleStartChapter(
                         chapter.id,
                         lessonIds,
                         `/learn/chapter/${chapter.id}/guide`
-                      )}
+                        )}
+                      }}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <Play className="h-4 w-4 mr-2" />
@@ -153,11 +161,19 @@ const Chapters = () => {
                     {(chapterStatus === 'study' || chapterStatus === 'quiz_wrong' || chapterStatus === 'reviewed') && (
                       <Button
                         variant="outline"
-                        onClick={() => handleStartChapter(
+                        onClick={() => {
+                          if(chapter.title == "자음"){
+                          const signIds = chapter.signs.map((sign: any) => sign.id);
+                          handleStartChapter(chapter.id,signIds,"/test/letter/consonant/study");
+                        }else if(chapter.title == "모음"){
+                          const signIds = chapter.signs.map((sign: any) => sign.id);
+                          handleStartChapter(chapter.id,signIds,"/test/letter/vowel/study");
+                        }else{
+                          handleStartChapter(
                           chapter.id,
                           lessonIds,
                           `/learn/chapter/${chapter.id}/guide`
-                        )}
+                        )}}}
                       >
                         퀴즈 풀기
                       </Button>

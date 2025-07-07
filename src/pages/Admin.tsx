@@ -180,8 +180,9 @@ const Admin = () => {
         onSave={async (categoryData) => {
           if (editingCategory) {
             updateCategory(editingCategory.id, categoryData);
+            API.put(`${editingCategory.id}`,categoryData)
           } else {
-            const res = await API.post("/learning/category", categoryData);
+            const res = await API.post("/category", categoryData);
             const createdCategory = res.data as { id: string }; 
             addCategory(categoryData,createdCategory.id);
             // API.post("/learning/category",categoryData);
@@ -199,9 +200,9 @@ const Admin = () => {
           if (editingChapter) {
             updateChapter(editingChapter.categoryId, editingChapter.chapter.id, chapterData);
             const lessonIds = chapterData.signs.map(sign => sign.id);
-            await API.post("/learning/connect/lesson",{"chapter":editingChapter.chapter.id, "lesson": lessonIds});
+            await API.post(`/chapters/${editingChapter.chapter.id}/lessons/connect`,{"lesson": lessonIds});
           } else {
-            const chapterRes = await API.post<Chapter>("/learning/chapter", {
+            const chapterRes = await API.post<Chapter>("/chapters", {
                 categoryid: selectedCategoryId,
                 title: chapterData["title"],
                 type: chapterData["type"]
@@ -209,7 +210,7 @@ const Admin = () => {
             const chapterId = (chapterRes.data as any).id;// ✅ ObjectId 문자열
             addChapter(selectedCategoryId, chapterData,chapterId);
             const lessonIds = chapterData.signs.map(sign => sign.id);
-            await API.post(`/${chapterId}/lessons/connect`,{"lesson": lessonIds});
+            await API.post(`/chapters/${chapterId}/lessons/connect`,{"lesson": lessonIds});
           }
           handleChapterModalClose();
         }}
