@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from '@/utils/EventEmitter';
 
 export interface SignalingMessage {
   type: 'join' | 'offer' | 'answer' | 'ice-candidate' | 'video-frame' | 'leave' | 'new-peer' | 'joined' | 'peer-disconnected' | 'classification-result';
@@ -18,7 +18,7 @@ export class WebRTCSignalingClient extends EventEmitter {
   private isConnected = false;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimeout: number | null = null;
 
   constructor(url: string, roomId: string = 'default') {
     super();
@@ -154,7 +154,7 @@ export class WebRTCSignalingClient extends EventEmitter {
       this.connect().catch(error => {
         console.error('재연결 실패:', error);
       });
-    }, delay);
+    }, delay) as unknown as number;
   }
 
   disconnect(): void {

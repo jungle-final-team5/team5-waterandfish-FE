@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from '@/utils/EventEmitter';
 
 export interface WebRTCConfig {
   iceServers: RTCIceServer[];
@@ -34,7 +34,7 @@ export class WebRTCService extends EventEmitter {
   private isConnected = false;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private statsInterval: NodeJS.Timeout | null = null;
+  private statsInterval: number | null = null;
 
   constructor(config: Partial<WebRTCConfig> = {}) {
     super();
@@ -245,7 +245,7 @@ export class WebRTCService extends EventEmitter {
           console.error('통계 수집 실패:', error);
         }
       }
-    }, 1000);
+    }, 1000) as unknown as number;
   }
 
   private processStats(stats: RTCStatsReport): WebRTCStats {

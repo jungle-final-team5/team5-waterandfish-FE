@@ -25,6 +25,7 @@ import QuizReview from "./pages/ReviewSession";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { GlobalWebSocketProvider } from "@/contexts/GlobalWebSocketContext";
 import ReviewSession from "./pages/ReviewSession";
+import SharedMemoryVideoDemo from "./components/SharedMemoryVideoDemo";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/search" element={<SearchPage />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/Admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+              <Route path="/shared-memory-video" element={<SharedMemoryVideoDemo />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
