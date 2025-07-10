@@ -2,6 +2,13 @@ import { useRef, useCallback, useEffect, useState } from 'react';
 import { Holistic, Results } from '@mediapipe/holistic';
 import { Camera } from '@mediapipe/camera_utils';
 import { LandmarksData } from '@/services/SignClassifierClient';
+import { 
+  checkWebGLSupport, 
+  checkMediaPipeModule, 
+  getOptimizedMediaPipeConfig,
+  createRetryLogic,
+  getMediaPipeCDNUrls
+} from '@/utils/mediaPipeUtils';
 
 interface UseMediaPipeHolisticOptions {
   onLandmarks?: (landmarks: LandmarksData) => void;
@@ -24,6 +31,8 @@ interface UseMediaPipeHolisticReturn {
   startCamera: () => Promise<boolean>;
   stopCamera: () => void;
   processFrame: () => void;
+  error: string | null;
+  retryInitialization: () => Promise<boolean>;
 }
 
 export const useMediaPipeHolistic = (
@@ -38,6 +47,7 @@ export const useMediaPipeHolistic = (
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastLandmarks, setLastLandmarks] = useState<LandmarksData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [initializationAttempts, setInitializationAttempts] = useState(0);
 
   const {
     onLandmarks,
@@ -109,36 +119,47 @@ export const useMediaPipeHolistic = (
     return () => {}; // 로깅이 활성화된 경우 정리 함수 없음
   }, [enableLogging]);
 
-  // WebGL 지원 확인
-  const checkWebGLSupport = useCallback(() => {
-    try {
-      const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-      
-      if (!gl) {
-        console.warn('⚠️ WebGL이 지원되지 않습니다');
-        return false;
-      }
-
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-      if (debugInfo) {
-        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-        console.log('🎮 WebGL 렌더러:', renderer);
-      }
-
-      return true;
-    } catch (error) {
-      console.error('❌ WebGL 지원 확인 실패:', error);
+  // WebGL 지원 확인 (유틸리티 함수 사용)
+  const checkWebGLSupportLocal = useCallback(() => {
+    const webglInfo = checkWebGLSupport();
+    if (!webglInfo.supported) {
+      console.warn('⚠️ WebGL 지원 확인 실패:', webglInfo.reason);
       return false;
     }
+    
+    if (webglInfo.isEC2Environment) {
+      console.warn('⚠️ EC2 환경에서 소프트웨어 렌더러 사용 중:', webglInfo.details);
+    }
+    
+    return true;
+  }, []);
+
+  // MediaPipe 모듈 로드 확인 (유틸리티 함수 사용)
+  const checkMediaPipeModuleLocal = useCallback(async () => {
+    const mediaPipeInfo = await checkMediaPipeModule();
+    if (!mediaPipeInfo.loaded) {
+      console.error('❌ MediaPipe 모듈 확인 실패:', mediaPipeInfo.reason);
+      return false;
+    }
+    
+    console.log('✅ MediaPipe Holistic 모듈 확인됨');
+    return true;
   }, []);
 
   // MediaPipe 초기화
   const initializeMediaPipe = useCallback(async () => {
     try {
+      setError(null);
+      
       // WebGL 지원 확인
-      if (!checkWebGLSupport()) {
+      if (!checkWebGLSupportLocal()) {
         throw new Error('WebGL이 지원되지 않아 MediaPipe를 초기화할 수 없습니다');
+      }
+
+      // MediaPipe 모듈 확인
+      const moduleLoaded = await checkMediaPipeModuleLocal();
+      if (!moduleLoaded) {
+        throw new Error('MediaPipe 모듈을 로드할 수 없습니다');
       }
 
       // 로그 필터링 시작
@@ -146,62 +167,102 @@ export const useMediaPipeHolistic = (
       
       console.log('🎯 MediaPipe Holistic 초기화 중...');
       
-      const holistic = new Holistic({
-        locateFile: (file) => {
-          return `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`;
+      // 브라우저가 완전히 준비될 때까지 대기
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 환경에 따른 최적화된 설정 가져오기
+      const webglInfo = checkWebGLSupport();
+      const optimizedConfig = getOptimizedMediaPipeConfig(webglInfo.isEC2Environment);
+      
+      let holistic;
+      try {
+        // CDN에서 파일을 로드하도록 설정
+        const cdnUrls = getMediaPipeCDNUrls();
+        holistic = new Holistic({
+          locateFile: (file) => {
+            return `${cdnUrls[0]}/${file}`;
+          }
+        });
+        console.log('✅ Holistic 인스턴스 생성 성공');
+      } catch (constructorError) {
+        console.error('❌ Holistic 생성자 오류:', constructorError);
+        
+        // 대체 방법 시도
+        try {
+          holistic = new Holistic();
+          console.log('✅ Holistic 인스턴스 생성 성공 (대체 방법)');
+        } catch (fallbackError) {
+          throw new Error(`MediaPipe Holistic 생성 실패: ${constructorError.message}`);
         }
-      });
+      }
 
-      // MediaPipe 옵션 설정
-      holistic.setOptions({
-        modelComplexity,
-        smoothLandmarks,
-        enableSegmentation,
-        smoothSegmentation,
-        refineFaceLandmarks,
-        minDetectionConfidence,
-        minTrackingConfidence
-      });
+      // MediaPipe 옵션 설정 (최적화된 설정 사용)
+      try {
+        const finalConfig = {
+          ...optimizedConfig,
+          // 사용자가 지정한 옵션으로 덮어쓰기
+          modelComplexity: modelComplexity ?? optimizedConfig.modelComplexity,
+          smoothLandmarks: smoothLandmarks ?? optimizedConfig.smoothLandmarks,
+          enableSegmentation: enableSegmentation ?? optimizedConfig.enableSegmentation,
+          smoothSegmentation: smoothSegmentation ?? optimizedConfig.smoothSegmentation,
+          refineFaceLandmarks: refineFaceLandmarks ?? optimizedConfig.refineFaceLandmarks,
+          minDetectionConfidence: minDetectionConfidence ?? optimizedConfig.minDetectionConfidence,
+          minTrackingConfidence: minTrackingConfidence ?? optimizedConfig.minTrackingConfidence,
+        };
+        
+        holistic.setOptions(finalConfig);
+        console.log('✅ Holistic 옵션 설정 성공 (최적화된 설정 적용)');
+      } catch (optionsError) {
+        console.error('❌ Holistic 옵션 설정 오류:', optionsError);
+        throw new Error(`MediaPipe 옵션 설정 실패: ${optionsError.message}`);
+      }
 
       // 결과 처리 콜백 설정
-      holistic.onResults((results: Results) => {
-        setIsProcessing(true);
-        
-        try {
-          // 랜드마크 데이터 추출 및 변환
-          const landmarksData: LandmarksData = {
-            pose: results.poseLandmarks 
-              ? results.poseLandmarks.map(landmark => [landmark.x, landmark.y, landmark.z])
-              : null,
-            left_hand: results.leftHandLandmarks 
-              ? results.leftHandLandmarks.map(landmark => [landmark.x, landmark.y, landmark.z])
-              : null,
-            right_hand: results.rightHandLandmarks 
-              ? results.rightHandLandmarks.map(landmark => [landmark.x, landmark.y, landmark.z])
-              : null
-          };
+      try {
+        holistic.onResults((results: Results) => {
+          setIsProcessing(true);
+          
+          try {
+            // 랜드마크 데이터 추출 및 변환
+            const landmarksData: LandmarksData = {
+              pose: results.poseLandmarks 
+                ? results.poseLandmarks.map(landmark => [landmark.x, landmark.y, landmark.z])
+                : null,
+              left_hand: results.leftHandLandmarks 
+                ? results.leftHandLandmarks.map(landmark => [landmark.x, landmark.y, landmark.z])
+                : null,
+              right_hand: results.rightHandLandmarks 
+                ? results.rightHandLandmarks.map(landmark => [landmark.x, landmark.y, landmark.z])
+                : null
+            };
 
-          setLastLandmarks(landmarksData);
+            setLastLandmarks(landmarksData);
 
-          // 콜백 호출
-          if (onLandmarks) {
-            onLandmarks(landmarksData);
+            // 콜백 호출
+            if (onLandmarks) {
+              onLandmarks(landmarksData);
+            }
+
+            // 디버그용 시각화 (옵션)
+            if (canvasRef.current) {
+              drawLandmarks(results);
+            }
+
+          } catch (error) {
+            console.error('❌ 랜드마크 처리 실패:', error);
+          } finally {
+            setIsProcessing(false);
           }
-
-          // 디버그용 시각화 (옵션)
-          if (canvasRef.current) {
-            drawLandmarks(results);
-          }
-
-        } catch (error) {
-          console.error('❌ 랜드마크 처리 실패:', error);
-        } finally {
-          setIsProcessing(false);
-        }
-      });
+        });
+        console.log('✅ Holistic 결과 콜백 설정 성공');
+      } catch (callbackError) {
+        console.error('❌ Holistic 결과 콜백 설정 오류:', callbackError);
+        throw new Error(`MediaPipe 결과 콜백 설정 실패: ${callbackError.message}`);
+      }
 
       holisticRef.current = holistic;
       setIsInitialized(true);
+      setInitializationAttempts(0);
       console.log('✅ MediaPipe Holistic 초기화 완료');
       
       // 로그 필터링 정리
@@ -211,8 +272,11 @@ export const useMediaPipeHolistic = (
       
       return true;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
       console.error('❌ MediaPipe Holistic 초기화 실패:', error);
+      setError(errorMessage);
       setIsInitialized(false);
+      setInitializationAttempts(prev => prev + 1);
       return false;
     }
   }, [
@@ -225,8 +289,34 @@ export const useMediaPipeHolistic = (
     minDetectionConfidence,
     minTrackingConfidence,
     filterConsoleLogs,
-    checkWebGLSupport
+    checkWebGLSupportLocal,
+    checkMediaPipeModuleLocal
   ]);
+
+  // 재시도 함수
+  const retryInitialization = useCallback(async (): Promise<boolean> => {
+    if (initializationAttempts >= 3) {
+      setError('최대 재시도 횟수를 초과했습니다. 페이지를 새로고침해주세요.');
+      return false;
+    }
+
+    console.log(`🔄 MediaPipe 초기화 재시도 ${initializationAttempts + 1}/3`);
+    
+    // 기존 인스턴스 정리
+    if (holisticRef.current) {
+      try {
+        holisticRef.current.close();
+      } catch (e) {
+        console.warn('기존 MediaPipe 인스턴스 정리 중 오류:', e);
+      }
+      holisticRef.current = null;
+    }
+
+    // 잠시 대기 후 재시도
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    return await initializeMediaPipe();
+  }, [initializationAttempts, initializeMediaPipe]);
 
   // 랜드마크 시각화 (디버그용)
   const drawLandmarks = useCallback((results: Results) => {
@@ -324,18 +414,42 @@ export const useMediaPipeHolistic = (
 
   // 컴포넌트 마운트 시 MediaPipe 초기화
   useEffect(() => {
-    initializeMediaPipe();
+    // 사용자 상호작용 후 초기화 시도
+    const handleUserInteraction = async () => {
+      if (!isInitialized && !holisticRef.current) {
+        await initializeMediaPipe();
+      }
+    };
+
+    // 지연된 초기화 시도
+    const initTimeout = setTimeout(handleUserInteraction, 2000);
+
+    // 사용자 상호작용 이벤트 리스너
+    const events = ['click', 'touchstart', 'keydown'];
+    const eventHandlers = events.map(event => {
+      const handler = () => handleUserInteraction();
+      document.addEventListener(event, handler, { once: true });
+      return { event, handler };
+    });
 
     // 컴포넌트 언마운트 시 정리
     return () => {
+      clearTimeout(initTimeout);
+      eventHandlers.forEach(({ event, handler }) => {
+        document.removeEventListener(event, handler);
+      });
       stopCamera();
       if (holisticRef.current) {
-        holisticRef.current.close();
+        try {
+          holisticRef.current.close();
+        } catch (e) {
+          console.warn('MediaPipe 정리 중 오류:', e);
+        }
         holisticRef.current = null;
       }
       setIsInitialized(false);
     };
-  }, [initializeMediaPipe, stopCamera]);
+  }, [initializeMediaPipe, stopCamera, isInitialized]);
 
   return {
     videoRef,
@@ -345,6 +459,8 @@ export const useMediaPipeHolistic = (
     lastLandmarks,
     startCamera,
     stopCamera,
-    processFrame
+    processFrame,
+    error,
+    retryInitialization
   };
 }; 

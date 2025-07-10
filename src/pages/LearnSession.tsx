@@ -19,6 +19,7 @@ import SystemStatus from '@/components/SystemStatus';
 import FeatureGuide from '@/components/FeatureGuide';
 import { useMediaPipeHolistic } from '@/hooks/useMediaPipeHolistic';
 import { LandmarksData } from '@/services/SignClassifierClient';
+import MediaPipeFallback from '@/components/MediaPipeFallback';
 
 // 재시도 설정
 const RETRY_CONFIG = {
@@ -225,7 +226,9 @@ const LearnSession = () => {
     isProcessing,
     lastLandmarks,
     startCamera,
-    stopCamera
+    stopCamera,
+    error: mediaPipeError,
+    retryInitialization
   } = useMediaPipeHolistic({
     onLandmarks: handleLandmarksDetected,
     modelComplexity: 1,
@@ -586,48 +589,56 @@ const LearnSession = () => {
         />}
         <div className="mt-4 p-3 bg-gray-100 rounded-md">
 
-
-
-
-          {/* 비디오 입력 영역 */}
-          <div className="space-y-4">
-            <VideoInput
-              width={640}
-              height={480}
-              autoStart={false}
-              showControls={true}
-              onStreamReady={handleStreamReady}
-              onStreamError={handleStreamError}
-              className="h-full"
-              currentSign={currentSign}
-              currentResult={displayConfidence}
+          {/* MediaPipe 오류 시 대체 컴포넌트 표시 */}
+          {mediaPipeError && !isInitialized ? (
+            <MediaPipeFallback
+              error={mediaPipeError}
+              onRetry={retryInitialization}
+              onManualMode={() => {
+                // 수동 모드로 전환하는 로직 (필요시 구현)
+                console.log('수동 모드로 전환');
+              }}
             />
-
-            <StreamingControls
-              isStreaming={isStreaming}
-              streamingStatus={streamingStatus}
-              streamingConfig={streamingConfig}
-              currentStream={currentStream}
-              connectionStatus={connectionStatus}
-              onStartStreaming={startStreaming}
-              onStopStreaming={stopStreaming}
-              onConfigChange={setStreamingConfig}
-              transitionSign={handleNextSign}
-            />
-
-
-            {/* 숨겨진 비디오 요소들 */}
-            <div className="hidden">
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-cover"
+          ) : (
+            /* 비디오 입력 영역 */
+            <div className="space-y-4">
+              <VideoInput
+                width={640}
+                height={480}
+                autoStart={false}
+                showControls={true}
+                onStreamReady={handleStreamReady}
+                onStreamError={handleStreamError}
+                className="h-full"
+                currentSign={currentSign}
+                currentResult={displayConfidence}
               />
-              <canvas ref={canvasRef} />
+
+              <StreamingControls
+                isStreaming={isStreaming}
+                streamingStatus={streamingStatus}
+                streamingConfig={streamingConfig}
+                currentStream={currentStream}
+                connectionStatus={connectionStatus}
+                onStartStreaming={startStreaming}
+                onStopStreaming={stopStreaming}
+                onConfigChange={setStreamingConfig}
+                transitionSign={handleNextSign}
+              />
+
+              {/* 숨겨진 비디오 요소들 */}
+              <div className="hidden">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <canvas ref={canvasRef} />
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
         {/* 피드백 표시 */}
@@ -635,7 +646,7 @@ const LearnSession = () => {
           <div className="mt-8">
             <FeedbackDisplay
               feedback={feedback}
-              prediction={currentResult.prediction}
+              prediction={currentResult && typeof currentResult === 'object' && 'prediction' in currentResult ? (currentResult as any).prediction : 'Unknown'}
               onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
             />
           </div>
@@ -656,8 +667,8 @@ const LearnSession = () => {
           </div>
           <div>
             <span className="text-gray-600">MediaPipe 상태:</span>
-            <span className={`ml-2 ${isInitialized ? 'text-green-600' : 'text-yellow-600'}`}>
-              {isInitialized ? '준비됨' : '초기화 중'}
+            <span className={`ml-2 ${isInitialized ? 'text-green-600' : mediaPipeError ? 'text-red-600' : 'text-yellow-600'}`}>
+              {isInitialized ? '준비됨' : mediaPipeError ? '오류' : '초기화 중'}
             </span>
           </div>
           <div>
@@ -671,6 +682,26 @@ const LearnSession = () => {
             </span>
           </div>
         </div>
+        
+        {/* MediaPipe 오류 표시 및 재시도 버튼 */}
+        {mediaPipeError && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-red-800 mb-1">MediaPipe 초기화 오류</h4>
+                <p className="text-xs text-red-600">{mediaPipeError}</p>
+              </div>
+              <Button
+                onClick={retryInitialization}
+                size="sm"
+                variant="outline"
+                className="ml-3 text-red-700 border-red-300 hover:bg-red-50"
+              >
+                재시도
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 마지막 랜드마크 정보 */}
