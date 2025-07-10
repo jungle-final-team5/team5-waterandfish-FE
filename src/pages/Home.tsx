@@ -476,9 +476,14 @@ const Home = () => {
           <Button 
             variant="secondary"
             onClick={() => {
-              console.log('추천 수어:', recommendedSign);
-              console.log('word:', recommendedSign?.word);
-              if (recommendedSign) navigate(`/learn/word/${encodeURIComponent(recommendedSign.word ?? '')}`);
+              if (recommendedSign && recommendedSign.id) {
+                navigate(`/learn/${recommendedSign.id}`);
+              } else if (recommendedSign && recommendedSign.word) {
+                // 임시로 word 기반으로 이동 (기존 방식 유지)
+                navigate(`/learn/word/${encodeURIComponent(recommendedSign.word)}`);
+              } else {
+                alert('추천 수어 정보가 없습니다.');
+              }
             }}
             className="bg-white/90 hover:bg-white/100 border-white/90 hover:scale-105 transition-all duration-200 backdrop-blur-sm"
             disabled={!recommendedSign}
