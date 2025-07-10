@@ -70,7 +70,7 @@ const SearchPage = () => {
     try {
       await API.post(`/lessons/${sign.id}/view`);
     } catch { /* 조회수 증가 실패해도 무시 */ }
-    navigate(`/learn/word/${encodeURIComponent(sign.word)}`);
+    navigate('/learn/' + sign.id) // 또는 sign.id
     setOpen(false);
     setSearchTerm("");
   };
@@ -196,7 +196,7 @@ const SearchPage = () => {
                           alert('인기 수어에 word(수어 단어명)가 없습니다. 관리자에게 문의하세요.');
                           return;
                         }
-                        navigate(`/learn/word/${encodeURIComponent(sign.word)}`);
+                        navigate(`/learn/${sign.id}`);
                       }}
                       className="h-auto p-3 hover:bg-violet-50 border-gray-200 flex flex-col items-start"
                     >
