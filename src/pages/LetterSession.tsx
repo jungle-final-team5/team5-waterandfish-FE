@@ -11,6 +11,9 @@ import LetterDisplay from '@/components/LetterDisplay';
 import { Hands } from '@mediapipe/hands';
 
 const LetterSession = () => {
+  // LetterDisplay 대체 캐러셀 상태 (컴포넌트 최상단에 위치해야 함)
+  const carouselImages = ['/consonant.jpg', '/vowel.jpg'];
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const [gesture, setGesture] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCameraInitializing, setIsCameraInitializing] = useState(true);
@@ -23,9 +26,16 @@ const LetterSession = () => {
     } else if (setType === 'vowel') {
       return ['ㅏ', 'ㅑ', 'ㅓ', 'ㅕ','ㅗ','ㅛ','ㅜ','ㅠ','ㅡ','ㅣ'];
     } else {
-      return [];
+      return["수어지교","수어학습"]
     }
   });
+  const CHO = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+  const JUNG = ["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"];
+  const JONG = ["", "ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+  const doublesc = {'ㄲ':'ㄱ'+'ㄱ','ㄳ':'ㄱ'+'ㅅ','ㄵ':'ㄴ'+'ㅈ','ㄶ':'ㄴ'+'ㅎ','ㄸ':'ㄷ'+'ㄷ','ㄺ':'ㄹ'+'ㄱ','ㄻ':'ㄹ'+'ㅁ',
+                    'ㄼ':'ㄹ'+'ㅂ','ㄽ':'ㄹ'+'ㅅ','ㄾ':'ㄹ'+'ㅌ','ㄿ':'ㄹ'+'ㅍ','ㅀ':'ㄹ'+'ㅎ','ㅄ':'ㅂ'+'ㅅ','ㅆ':'ㅅ'+'ㅅ','ㅉ':'ㅈ'+'ㅈ',
+                    'ㅘ':'ㅗ'+'ㅏ','ㅙ':'ㅗ'+'ㅐ','ㅝ':'ㅜ'+'ㅓ','ㅞ':'ㅜ'+'ㅔ'};
+
   const sendQuizResult = async () => {
     const passedLetters = JSON.parse(localStorage.getItem('passed') || '[]');
     const failedLetters = JSON.parse(localStorage.getItem('failed') || '[]');
@@ -420,7 +430,30 @@ console.log('MediaPipe Hands instance created via global script');
       if (timeref.current) timeref.current.textContent = times.current.toString();
     }
   };
+  const divwords = (word: string) => {
+    decref.current.textContent = '';
+        setIsDone(false);
+        std.current
+        for(let i = 0;i<word.length;i++){
+            const char = word[i];
+            const code = char.charCodeAt(0);
+            if((code>=12593&&code<=12622) || (code >= 12623 && code <= 12643)) {
+                decref.current.textContent += char;
+                continue;
+            }
+            else if (code < 0xAC00 || code > 0xD7A3) continue; // 한글 아니면 패스
 
+            const offset = code - 0xAC00;
+            const cho = CHO[Math.floor(offset / (21 * 28))];
+            const jung = JUNG[Math.floor((offset % (21 * 28)) / 28)];
+            const jong = JONG[offset % 28];
+            decref.current.textContent += (doublesc[cho]||cho);
+            decref.current.textContent += (doublesc[jung]||jung);
+            if (jong) decref.current.textContent += (doublesc[jong] || jong);
+        }
+        pileref.current.textContent = '';
+  };
+  
 // 타이머 관련 상태 추가
 const [gestureRecognitionActive, setGestureRecognitionActive] = useState(false);
 const gestureTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -527,7 +560,7 @@ useEffect(() => {
   useEffect(() => {
     if (!words) return;
     std.current = true;
-    divword(words);
+    divwords(words);
     
     if(qors.current){
       setTimeout(timedown, 1000);
@@ -558,7 +591,7 @@ useEffect(() => {
 
   const progress = (currentIndex / sets.length) * 100;
 
-  if(isDone && currentIndex === sets.length - 1)
+  if(isDone && currentIndex === sets.length)
   {
       return (
           <div className="flex items-center justify-center min-h-screen">
@@ -569,7 +602,152 @@ useEffect(() => {
       </div>
   );
   }
+  if(setType != 'consonant' && setType != 'vowel'){
+    return (
+      <div className="min-h-screen bg-gray-50">
+          <SessionHeader
+          isQuizMode={false}
+          currentSign={"쑤퍼노바"}
+          chapter={"chaptar"}
+          currentSignIndex={1}
+          progress={progress}
+          categoryId={undefined}
+          navigate={navigate}
+        />
 
+        <main className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {qors.current?(<div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>현재 문제</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div ref={decref} className="text-5xl text-center font-bold" />
+                  <div ref={timeref} className="text-center text-gray-600 mt-2" />
+                  <div ref={pileref} className="text-center text-3xl mt-4" />
+                </CardContent>
+              </Card>
+            </div>):(<div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>단어 해체</CardTitle>
+  {/* 빈 트랙은 항상 */}
+  <div className="mt-2">
+    <div className="w-full bg-gray-200 rounded-full h-2.5">
+      {/* 채워지는 부분은 progressPercent에 따라 넓이만 변함 */}
+      <div
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-[800ms] ease-linear"
+        style={{ width: `${progressPercent}%` }}
+      />
+    </div>
+
+    {/* 인식 중 텍스트만 활성 상태에서 노출 */}
+    {gestureRecognitionActive && (
+      <div className="text-xs text-center mt-1 text-gray-500">
+        인식 중...
+      </div>
+    )}
+    </div>
+                                  
+                </CardHeader>
+                <CardContent>
+                  <div ref={decref} className="text-5xl text-center font-bold" />
+                  {/* 이미지 캐러셀 (LetterDisplay 대체) */}
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-64 h-64 flex items-center justify-center">
+                      <img
+                        src={carouselImages[carouselIndex]}
+                        alt={`이미지${carouselIndex + 1}`}
+                        className="object-contain w-full h-full rounded shadow"
+                      />
+                      <button
+                        className="absolute left-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-2 shadow hover:bg-blue-100"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setCarouselIndex(i => (i - 1 + carouselImages.length) % carouselImages.length);
+                        }}
+                        aria-label="이전"
+                      >
+                        ◀
+                      </button>
+                      <button
+                        className="absolute right-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-2 shadow hover:bg-blue-100"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setCarouselIndex(i => (i + 1) % carouselImages.length);
+                        }}
+                        aria-label="다음"
+                      >
+                        ▶
+                      </button>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">{carouselIndex + 1} / {carouselImages.length}</div>
+                  </div>
+{/* // LetterDisplay 대체 캐러셀 상태 (컴포넌트 최상단에 위치해야 함)
+const carouselImages = ['/consonant.jpg', '/vowel.jpg'];
+const [carouselIndex, setCarouselIndex] = useState(0); */}
+                  <div ref={pileref} className="text-center text-3xl mt-4" />
+                </CardContent>
+              </Card>
+            </div>)}
+
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>손 모양 인식</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center">
+                  {isCameraInitializing && (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">카메라 초기화 중...</p>
+                    </div>
+                  )}
+                  
+                  {cameraError && (
+                    <div className="text-center py-8">
+                      <p className="text-red-600 mb-4">{cameraError}</p>
+                      <Button onClick={restartCamera} variant="outline">
+                        카메라 재시작
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <>
+                    <video 
+                      ref={videoRef} 
+                      style={{ display: 'none' }} 
+                      autoPlay 
+                      muted 
+                      playsInline 
+                      width="640" 
+                      height="480" 
+                    />
+                    <canvas 
+                      ref={canvasRef} 
+                      width="640" 
+                      height="480" 
+                      className="border border-gray-300"  
+                      style={{ 
+                        transform: 'scaleX(-1)',
+                        visibility: !isCameraInitializing && !cameraError ? 'visible' : 'hidden'
+                      }}
+                    />
+                    <div 
+                      ref={resultRef} 
+                      className="text-center text-xl mt-4"
+                      style={{ visibility: !isCameraInitializing && !cameraError ? 'visible' : 'hidden' }}
+                    />
+                  </>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gray-50">
         <SessionHeader
