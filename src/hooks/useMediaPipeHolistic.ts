@@ -46,13 +46,13 @@ class MediaPipeCamera implements CameraInterface {
 
       // 다양한 카메라 접근 방식 시도
       let stream: MediaStream;
-      
+
       try {
         // 1. 기본 접근 방식
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (error) {
         console.warn('⚠️ 기본 카메라 접근 실패, 대체 방식 시도:', error);
-        
+
         try {
           // 2. 더 관대한 제약 조건
           stream = await navigator.mediaDevices.getUserMedia({
@@ -61,17 +61,17 @@ class MediaPipeCamera implements CameraInterface {
           });
         } catch (fallbackError) {
           console.warn('⚠️ 대체 카메라 접근 실패, 환경 확인:', fallbackError);
-          
+
           // 3. 사용 가능한 카메라 확인
           const devices = await navigator.mediaDevices.enumerateDevices();
           const videoDevices = devices.filter(device => device.kind === 'videoinput');
-          
+
           if (videoDevices.length === 0) {
             throw new Error('사용 가능한 카메라가 없습니다');
           }
-          
+
           console.log('📹 사용 가능한 카메라:', videoDevices.map(d => d.label || d.deviceId));
-          
+
           // 4. 특정 카메라로 시도
           stream = await navigator.mediaDevices.getUserMedia({
             video: {
@@ -84,7 +84,7 @@ class MediaPipeCamera implements CameraInterface {
 
       this.stream = stream;
       this.video.srcObject = stream;
-      
+
       // 비디오 로드 완료 대기
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
@@ -104,7 +104,7 @@ class MediaPipeCamera implements CameraInterface {
 
       // 프레임 처리 시작
       this.startFrameProcessing();
-      
+
       console.log('✅ 카메라 스트림 시작됨');
     } catch (error) {
       console.error('❌ 카메라 시작 실패:', error);
@@ -123,7 +123,7 @@ class MediaPipeCamera implements CameraInterface {
       }
       this.animationId = requestAnimationFrame(processFrame);
     };
-    
+
     this.animationId = requestAnimationFrame(processFrame);
   }
 
@@ -150,7 +150,6 @@ class MediaPipeCamera implements CameraInterface {
 }
 
 interface UseMediaPipeHolisticOptions {
-  onLandmarks?: (landmarks: LandmarksData) => void;
   modelComplexity?: 0 | 1 | 2;
   smoothLandmarks?: boolean;
   enableSegmentation?: boolean;
@@ -175,6 +174,12 @@ interface UseMediaPipeHolisticReturn {
   processFrame: () => void;
   retryInitialization: () => Promise<boolean>;
   inspect_sequence: (sequence: any) => boolean;
+  isRecording: boolean;
+  setIsRecording: (isRecording: boolean) => void;
+  isConnected: boolean;
+  setIsConnected: (isConnected: boolean) => void;
+  landmarksBuffer: LandmarksData[];
+  setLandmarksBuffer: (landmarksBuffer: LandmarksData[]) => void;
 }
 
 // MediaPipe 모듈 로딩 상태 추적
@@ -197,7 +202,7 @@ const checkGlobalMediaPipe = (): boolean => {
       console.log('✅ 전역 MediaPipe 객체 발견');
       return true;
     }
-    
+
     // require나 import로 로드된 모듈 확인
     if (typeof require !== 'undefined') {
       try {
@@ -210,7 +215,7 @@ const checkGlobalMediaPipe = (): boolean => {
         // require 실패는 정상
       }
     }
-    
+
     return false;
   } catch (error) {
     console.warn('⚠️ 전역 MediaPipe 확인 실패:', error);
@@ -227,7 +232,7 @@ const loadMediaPipeViaScript = (): Promise<boolean> => {
       resolve(true);
       return;
     }
-    
+
     // 다양한 스크립트 URL 시도
     const scriptUrls = [
       'https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/holistic.js',
@@ -235,37 +240,37 @@ const loadMediaPipeViaScript = (): Promise<boolean> => {
       'https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js',
       'https://unpkg.com/@mediapipe/holistic/holistic.js'
     ];
-    
+
     let currentIndex = 0;
-    
+
     const tryNextScript = () => {
       if (currentIndex >= scriptUrls.length) {
         console.error('❌ 모든 MediaPipe 스크립트 URL 시도 실패');
         resolve(false);
         return;
       }
-      
+
       const scriptUrl = scriptUrls[currentIndex];
       console.log(`📥 MediaPipe 스크립트 로딩 시도: ${scriptUrl}`);
-      
+
       const script = document.createElement('script');
       script.src = scriptUrl;
       script.async = true;
-      
+
       script.onload = () => {
         console.log(`✅ MediaPipe 스크립트 로드 성공: ${scriptUrl}`);
         resolve(true);
       };
-      
+
       script.onerror = () => {
         console.warn(`⚠️ MediaPipe 스크립트 로드 실패: ${scriptUrl}`);
         currentIndex++;
         tryNextScript();
       };
-      
+
       document.head.appendChild(script);
     };
-    
+
     tryNextScript();
   });
 };
@@ -279,7 +284,7 @@ const checkCDNAccessibility = async (): Promise<string | null> => {
         mode: 'cors',
         cache: 'no-cache'
       });
-      
+
       if (response.ok) {
         console.log(`✅ CDN 접근 가능: ${cdnUrl}`);
         return cdnUrl;
@@ -288,7 +293,7 @@ const checkCDNAccessibility = async (): Promise<string | null> => {
       console.warn(`⚠️ CDN 접근 실패: ${cdnUrl}`, error);
     }
   }
-  
+
   console.error('❌ 모든 CDN 접근 실패');
   return null;
 };
@@ -297,13 +302,13 @@ const checkCDNAccessibility = async (): Promise<string | null> => {
 const loadMediaPipeModule = async (): Promise<boolean> => {
   try {
     console.log('📦 MediaPipe 모듈 로딩 시작...');
-    
+
     // 전역 MediaPipe 확인
     if (checkGlobalMediaPipe()) {
       console.log('✅ 전역 MediaPipe 사용 가능');
       return true;
     }
-    
+
     // 스크립트 태그를 통한 로딩 시도
     console.log('📥 MediaPipe 스크립트 태그 로딩 시도...');
     const scriptLoaded = await loadMediaPipeViaScript();
@@ -311,7 +316,7 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
       console.log('✅ 스크립트 태그를 통한 MediaPipe 로딩 성공');
       return true;
     }
-    
+
     // CDN 접근성 확인
     const accessibleCDN = await checkCDNAccessibility();
     if (!accessibleCDN) {
@@ -321,14 +326,14 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
     // 동적 import로 MediaPipe 모듈 로드 (개선된 방식)
     console.log('📥 MediaPipe 모듈 동적 import 시도...');
     const mediapipeModule = await import('@mediapipe/holistic');
-    
+
     // 모듈 구조 확인
     console.log('🔍 MediaPipe 모듈 구조 확인:', Object.keys(mediapipeModule));
     console.log('🔍 default export 타입:', typeof mediapipeModule.default);
-    
+
     // 다양한 방식으로 Holistic 생성자 찾기
     let Holistic: any = null;
-    
+
     // 1. 직접 export 확인
     if (mediapipeModule.Holistic) {
       Holistic = mediapipeModule.Holistic;
@@ -337,11 +342,11 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
     // 2. default export 확인 (개선된 로직)
     else if (mediapipeModule.default) {
       console.log('🔍 default export 상세 분석...');
-      
+
       // default가 객체인 경우
       if (typeof mediapipeModule.default === 'object' && mediapipeModule.default !== null) {
         console.log('default export 객체의 키들:', Object.keys(mediapipeModule.default));
-        
+
         // 다양한 가능한 키 이름 확인
         const possibleKeys = ['Holistic', 'holistic', 'HolisticSolution', 'holisticSolution'];
         for (const key of possibleKeys) {
@@ -351,7 +356,7 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
             break;
           }
         }
-        
+
         // 모든 속성을 순회하며 함수 타입 찾기
         if (!Holistic) {
           for (const [key, value] of Object.entries(mediapipeModule.default)) {
@@ -369,7 +374,7 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
         console.log('✅ default export가 Holistic 생성자인 것으로 추정');
       }
     }
-    
+
     // 3. 전역 객체에서 찾기
     if (!Holistic && typeof window !== 'undefined') {
       if ((window as any).MediaPipe && (window as any).MediaPipe.Holistic) {
@@ -377,12 +382,12 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
         console.log('✅ 전역 MediaPipe 객체에서 Holistic 발견');
       }
     }
-    
+
     // 4. 스크립트 태그 로딩 후 전역 객체 재확인
     if (!Holistic) {
       console.log('🔄 스크립트 태그 로딩 후 전역 객체 재확인...');
       await loadMediaPipeViaScript();
-      
+
       if (typeof window !== 'undefined') {
         // 다양한 전역 객체 경로 확인
         const globalPaths = [
@@ -393,12 +398,12 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
           'MediaPipeHolistic',
           'mediaPipeHolistic'
         ];
-        
+
         for (const path of globalPaths) {
           const parts = path.split('.');
           let obj: any = window;
           let found = true;
-          
+
           for (const part of parts) {
             if (obj && obj[part]) {
               obj = obj[part];
@@ -407,7 +412,7 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
               break;
             }
           }
-          
+
           if (found && typeof obj === 'function') {
             Holistic = obj;
             console.log(`✅ 전역 객체에서 발견: ${path}`);
@@ -416,7 +421,7 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
         }
       }
     }
-    
+
     if (!Holistic) {
       console.error('❌ Holistic 생성자를 찾을 수 없습니다');
       console.log('사용 가능한 exports:', Object.keys(mediapipeModule));
@@ -430,14 +435,14 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
       }
       throw new Error('Holistic constructor not found in module');
     }
-    
+
     if (typeof Holistic !== 'function') {
       console.error('❌ Holistic이 함수가 아닙니다:', typeof Holistic);
       throw new Error('Holistic is not a constructor function');
     }
-    
+
     console.log('✅ Holistic 생성자 확인됨');
-    
+
     // 테스트 인스턴스 생성으로 초기화 확인
     console.log('🧪 MediaPipe 테스트 인스턴스 생성...');
     const testHolistic = new Holistic({
@@ -445,7 +450,7 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
         return `${accessibleCDN}/${file}`;
       }
     });
-    
+
     // 기본 옵션으로 초기화 테스트
     testHolistic.setOptions({
       modelComplexity: 0,
@@ -456,21 +461,21 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5
     });
-    
+
     // 정리
     await testHolistic.close();
-    
+
     console.log('✅ MediaPipe 모듈 로드 성공');
     return true;
   } catch (error) {
     console.error('❌ MediaPipe 모듈 로드 실패:', error);
-    
+
     // 더 자세한 오류 정보 출력
     if (error instanceof Error) {
       console.error('오류 메시지:', error.message);
       console.error('오류 스택:', error.stack);
     }
-    
+
     return false;
   }
 };
@@ -481,13 +486,13 @@ const checkWasmAccessibility = async (): Promise<boolean> => {
     'holistic_solution_simd_wasm_bin.js',
     'holistic_solution_simd_wasm_bin.wasm'
   ];
-  
+
   // CDN 접근성 확인
   const accessibleCDN = await checkCDNAccessibility();
   if (!accessibleCDN) {
     return false;
   }
-  
+
   try {
     for (const file of wasmFiles) {
       const response = await fetch(`${accessibleCDN}/${file}`, {
@@ -495,13 +500,13 @@ const checkWasmAccessibility = async (): Promise<boolean> => {
         mode: 'cors',
         cache: 'no-cache'
       });
-      
+
       if (!response.ok) {
         console.warn(`⚠️ WASM 파일 접근 실패: ${file}`);
         return false;
       }
     }
-    
+
     console.log('✅ WASM 파일 접근 가능');
     return true;
   } catch (error) {
@@ -517,15 +522,17 @@ export const useMediaPipeHolistic = (
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const holisticRef = useRef<Holistic | null>(null);
   const cameraRef = useRef<MediaPipeCamera | null>(null);
-  
+
   const [isInitialized, setIsInitialized] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastLandmarks, setLastLandmarks] = useState<LandmarksData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBufferingPaused, setIsBufferingPaused] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [landmarksBuffer, setLandmarksBuffer] = useState<LandmarksData[]>([]);
 
   const {
-    onLandmarks,
     modelComplexity = 1,
     smoothLandmarks = true,
     enableSegmentation = false,
@@ -538,10 +545,25 @@ export const useMediaPipeHolistic = (
     retryDelay = 2000
   } = options;
 
+  // 랜드마크 감지 시 호출되는 콜백 (useCallback으로 먼저 정의)
+  const handleLandmarksDetected = useCallback((landmarks: LandmarksData) => {
+    console.log(`🎯 랜드마크 감지됨 - 녹화: ${isRecording}, 연결: ${isConnected}`);
+
+    // 녹화 중일 때만 버퍼에 추가
+    if (isRecording && isConnected) {
+      setLandmarksBuffer(prev => {
+        const newBuffer = [...prev, landmarks];
+        console.log(`📥 랜드마크 버퍼에 추가됨 (총 ${newBuffer.length}개)`);
+        return newBuffer;
+      });
+    } else {
+      console.log(`⚠️ 랜드마크 버퍼링 건너뜀 - 녹화: ${isRecording}, 연결: ${isConnected}`);
+    }
+  }, [isRecording, isConnected]);
 
   const inspect_sequence = (sequence: any) => {
     console.log('🔍 시퀀스 검사 시작:', sequence.data.sequence?.length || 0, '프레임');
-    
+
     // 시퀀스 데이터 추출
     const landmarksSequence = sequence.data.sequence as LandmarksData[];
     if (!landmarksSequence || landmarksSequence.length < 3) {
@@ -552,16 +574,16 @@ export const useMediaPipeHolistic = (
     const ACCELERATION_THRESHOLD = 300.0; // 가속도 임계값 (더 낮게 조정)
     const FRAME_RATE = 30; // 예상 프레임 레이트
     const FRAME_INTERVAL = 1 / FRAME_RATE; // 프레임 간격 (초)
-    
+
     // 노이즈 필터링을 위한 설정
     const MIN_MOVEMENT_THRESHOLD = 0.01; // 최소 이동 거리 임계값 (낮게 조정)
     const CONSECUTIVE_DETECTIONS_REQUIRED = 1; // 연속 감지 횟수 요구사항 (1로 줄임)
     const TOTAL_MOVEMENT_THRESHOLD = 0.03; // 전체 이동 거리 임계값 (낮게 조정)
-    
+
     // 각 랜드마크 포인트의 가속도 계산 (손만 감지)
     const checkAcceleration = () => {
       let fastMovementCount = 0; // 빠른 동작 감지 횟수
-      
+
       for (let i = 1; i < landmarksSequence.length - 1; i++) {
         const prev = landmarksSequence[i - 1];
         const current = landmarksSequence[i];
@@ -581,7 +603,7 @@ export const useMediaPipeHolistic = (
                 Math.pow(currentPos[1] - prevPos[1], 2) +
                 Math.pow(currentPos[2] - prevPos[2], 2)
               );
-              
+
               const movement2 = Math.sqrt(
                 Math.pow(nextPos[0] - currentPos[0], 2) +
                 Math.pow(nextPos[1] - currentPos[1], 2) +
@@ -623,8 +645,8 @@ export const useMediaPipeHolistic = (
               };
 
               const accelerationMagnitude = Math.sqrt(
-                acceleration.x * acceleration.x + 
-                acceleration.y * acceleration.y + 
+                acceleration.x * acceleration.x +
+                acceleration.y * acceleration.y +
                 acceleration.z * acceleration.z
               );
 
@@ -657,7 +679,7 @@ export const useMediaPipeHolistic = (
                 Math.pow(currentPos[1] - prevPos[1], 2) +
                 Math.pow(currentPos[2] - prevPos[2], 2)
               );
-              
+
               const movement2 = Math.sqrt(
                 Math.pow(nextPos[0] - currentPos[0], 2) +
                 Math.pow(nextPos[1] - currentPos[1], 2) +
@@ -699,15 +721,15 @@ export const useMediaPipeHolistic = (
               };
 
               const accelerationMagnitude = Math.sqrt(
-                acceleration.x * acceleration.x + 
-                acceleration.y * acceleration.y + 
+                acceleration.x * acceleration.x +
+                acceleration.y * acceleration.y +
                 acceleration.z * acceleration.z
               );
 
               if (accelerationMagnitude > ACCELERATION_THRESHOLD) {
                 fastMovementCount++;
                 console.warn(`🚨 빠른 동작 감지! 오른손 포인트 ${j}의 가속도: ${accelerationMagnitude.toFixed(3)} (${fastMovementCount}/${CONSECUTIVE_DETECTIONS_REQUIRED})`);
-                
+
                 if (fastMovementCount >= CONSECUTIVE_DETECTIONS_REQUIRED) {
                   // alert(`너무 빠른 동작이 감지되었습니다!\n오른손 포인트 ${j}의 가속도: ${accelerationMagnitude.toFixed(3)}\n천천히 동작해주세요.`);
                   setIsBufferingPaused(true);
@@ -725,7 +747,7 @@ export const useMediaPipeHolistic = (
 
     // 가속도 검사 실행
     const hasFastMovement = checkAcceleration();
-    
+
     if (!hasFastMovement) {
       console.log('✅ 동작 속도 정상');
     }
@@ -787,7 +809,7 @@ export const useMediaPipeHolistic = (
         console.info = originalInfo;
       };
     }
-    return () => {}; // 로깅이 활성화된 경우 정리 함수 없음
+    return () => { }; // 로깅이 활성화된 경우 정리 함수 없음
   }, [enableLogging]);
 
   // WebGL 지원 확인
@@ -795,7 +817,7 @@ export const useMediaPipeHolistic = (
     try {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-      
+
       if (!gl) {
         console.warn('⚠️ WebGL이 지원되지 않습니다');
         return false;
@@ -821,7 +843,7 @@ export const useMediaPipeHolistic = (
   const initializeMediaPipe = useCallback(async (retryCount = 0): Promise<boolean> => {
     try {
       setError(null);
-      
+
       // WebGL 지원 확인
       if (!checkWebGLSupport()) {
         throw new Error('WebGL이 지원되지 않아 MediaPipe를 초기화할 수 없습니다');
@@ -835,9 +857,9 @@ export const useMediaPipeHolistic = (
 
       // 로그 필터링 시작
       const cleanupLogs = filterConsoleLogs();
-      
+
       console.log(`🎯 MediaPipe Holistic 초기화 중... (시도 ${retryCount + 1}/${maxRetries + 1})`);
-      
+
       // 전역 로딩 상태 확인
       if (mediaPipeLoadPromise) {
         console.log('⏳ MediaPipe 모듈 로딩 대기 중...');
@@ -857,7 +879,7 @@ export const useMediaPipeHolistic = (
 
       // Holistic 인스턴스 생성 (개선된 방식)
       let Holistic: any = null;
-      
+
       // 1. 전역 객체에서 찾기 (우선순위)
       if (typeof window !== 'undefined') {
         // 다양한 전역 객체 경로 확인
@@ -869,12 +891,12 @@ export const useMediaPipeHolistic = (
           'MediaPipeHolistic',
           'mediaPipeHolistic'
         ];
-        
+
         for (const path of globalPaths) {
           const parts = path.split('.');
           let obj: any = window;
           let found = true;
-          
+
           for (const part of parts) {
             if (obj && obj[part]) {
               obj = obj[part];
@@ -883,7 +905,7 @@ export const useMediaPipeHolistic = (
               break;
             }
           }
-          
+
           if (found && typeof obj === 'function') {
             Holistic = obj;
             console.log(`✅ 전역 객체에서 Holistic 발견: ${path}`);
@@ -891,11 +913,11 @@ export const useMediaPipeHolistic = (
           }
         }
       }
-      
+
       // 2. 모듈에서 찾기
       if (!Holistic) {
         const mediapipeModule = await import('@mediapipe/holistic');
-        
+
         // 직접 export 확인
         if (mediapipeModule.Holistic) {
           Holistic = mediapipeModule.Holistic;
@@ -904,10 +926,10 @@ export const useMediaPipeHolistic = (
         // default export 확인 (개선된 로직)
         else if (mediapipeModule.default) {
           console.log('🔍 모듈 default export 분석...');
-          
+
           if (typeof mediapipeModule.default === 'object' && mediapipeModule.default !== null) {
             console.log('default export 객체의 키들:', Object.keys(mediapipeModule.default));
-            
+
             // 다양한 가능한 키 이름 확인
             const possibleKeys = ['Holistic', 'holistic', 'HolisticSolution', 'holisticSolution'];
             for (const key of possibleKeys) {
@@ -917,7 +939,7 @@ export const useMediaPipeHolistic = (
                 break;
               }
             }
-            
+
             // 모든 속성을 순회하며 함수 타입 찾기
             if (!Holistic) {
               for (const [key, value] of Object.entries(mediapipeModule.default)) {
@@ -934,12 +956,12 @@ export const useMediaPipeHolistic = (
           }
         }
       }
-      
+
       // 3. 스크립트 태그 로딩 후 재시도
       if (!Holistic) {
         console.log('🔄 스크립트 태그 로딩 후 Holistic 재검색...');
         await loadMediaPipeViaScript();
-        
+
         // 전역 객체 재확인
         if (typeof window !== 'undefined') {
           const globalPaths = [
@@ -950,12 +972,12 @@ export const useMediaPipeHolistic = (
             'MediaPipeHolistic',
             'mediaPipeHolistic'
           ];
-          
+
           for (const path of globalPaths) {
             const parts = path.split('.');
             let obj: any = window;
             let found = true;
-            
+
             for (const part of parts) {
               if (obj && obj[part]) {
                 obj = obj[part];
@@ -964,7 +986,7 @@ export const useMediaPipeHolistic = (
                 break;
               }
             }
-            
+
             if (found && typeof obj === 'function') {
               Holistic = obj;
               console.log(`✅ 스크립트 로딩 후 전역 객체에서 발견: ${path}`);
@@ -973,18 +995,18 @@ export const useMediaPipeHolistic = (
           }
         }
       }
-      
+
       if (!Holistic) {
         console.error('❌ Holistic 생성자를 찾을 수 없습니다');
         throw new Error('Holistic constructor not found in module or global object');
       }
-      
+
       // CDN 접근성 재확인
       const accessibleCDN = await checkCDNAccessibility();
       if (!accessibleCDN) {
         throw new Error('MediaPipe CDN에 접근할 수 없습니다');
       }
-      
+
       const holistic = new Holistic({
         locateFile: (file) => {
           return `${accessibleCDN}/${file}`;
@@ -1005,17 +1027,17 @@ export const useMediaPipeHolistic = (
       // 결과 처리 콜백 설정
       holistic.onResults((results: Results) => {
         setIsProcessing(true);
-        
+
         try {
           // 랜드마크 데이터 추출 및 변환
           const landmarksData: LandmarksData = {
-            pose: results.poseLandmarks 
+            pose: results.poseLandmarks
               ? results.poseLandmarks.map(landmark => [landmark.x, landmark.y, landmark.z])
               : null,
-            left_hand: results.leftHandLandmarks 
+            left_hand: results.leftHandLandmarks
               ? results.leftHandLandmarks.map(landmark => [landmark.x, landmark.y, landmark.z])
               : null,
-            right_hand: results.rightHandLandmarks 
+            right_hand: results.rightHandLandmarks
               ? results.rightHandLandmarks.map(landmark => [landmark.x, landmark.y, landmark.z])
               : null
           };
@@ -1023,9 +1045,7 @@ export const useMediaPipeHolistic = (
           setLastLandmarks(landmarksData);
 
           // 콜백 호출
-          if (onLandmarks) {
-            onLandmarks(landmarksData);
-          }
+          handleLandmarksDetected(landmarksData);
 
           // 디버그용 시각화 (옵션)
           if (canvasRef.current) {
@@ -1042,31 +1062,30 @@ export const useMediaPipeHolistic = (
       holisticRef.current = holistic;
       setIsInitialized(true);
       console.log('✅ MediaPipe Holistic 초기화 완료');
-      
+
       // 로그 필터링 정리
       setTimeout(() => {
         cleanupLogs();
       }, 2000); // 2초 후 로그 필터링 해제
-      
+
       return true;
     } catch (error) {
       console.error(`❌ MediaPipe Holistic 초기화 실패 (시도 ${retryCount + 1}):`, error);
-      
+
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
       setError(`초기화 실패: ${errorMessage}`);
       setIsInitialized(false);
-      
+
       // 재시도 로직
       if (retryCount < maxRetries) {
         console.log(`🔄 ${retryDelay}ms 후 재시도...`);
         await delay(retryDelay);
         return initializeMediaPipe(retryCount + 1);
       }
-      
+
       return false;
     }
   }, [
-    onLandmarks,
     modelComplexity,
     smoothLandmarks,
     enableSegmentation,
@@ -1077,7 +1096,9 @@ export const useMediaPipeHolistic = (
     filterConsoleLogs,
     checkWebGLSupport,
     maxRetries,
-    retryDelay
+    retryDelay,
+    isConnected,
+    isRecording
   ]);
 
   // 랜드마크 시각화 (디버그용)
@@ -1136,7 +1157,7 @@ export const useMediaPipeHolistic = (
 
     try {
       console.log('📹 카메라 시작 중...');
-      
+
       // 카메라 권한 확인
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('카메라 API가 지원되지 않습니다');
@@ -1147,7 +1168,7 @@ export const useMediaPipeHolistic = (
         cameraRef.current.stop();
         cameraRef.current = null;
       }
-      
+
       const camera = new MediaPipeCamera(videoRef.current, {
         onFrame: async () => {
           if (holisticRef.current && videoRef.current && videoRef.current.readyState >= 2) {
@@ -1165,12 +1186,12 @@ export const useMediaPipeHolistic = (
 
       await camera.start();
       cameraRef.current = camera;
-      
+
       console.log('✅ 카메라 시작됨');
       return true;
     } catch (error) {
       console.error('[useMediaPipeHolistic] ❌ 카메라 시작 실패:', error);
-      
+
       // 더 자세한 오류 정보 제공
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
@@ -1183,7 +1204,7 @@ export const useMediaPipeHolistic = (
           setError(`카메라 오류: ${error.message}`);
         }
       }
-      
+
       return false;
     }
   }, [isInitialized]);
@@ -1231,16 +1252,16 @@ export const useMediaPipeHolistic = (
   const retryInitialization = useCallback(async (): Promise<boolean> => {
     console.log('🔄 MediaPipe 초기화 재시도...');
     setError(null);
-    
+
     // 기존 인스턴스 정리
     if (holisticRef.current) {
       await holisticRef.current.close();
       holisticRef.current = null;
     }
-    
+
     // 전역 로딩 상태 리셋
     mediaPipeLoadPromise = null;
-    
+
     return initializeMediaPipe();
   }, [initializeMediaPipe]);
 
@@ -1256,5 +1277,11 @@ export const useMediaPipeHolistic = (
     processFrame,
     retryInitialization,
     inspect_sequence,
+    isRecording,
+    setIsRecording,
+    isConnected,
+    setIsConnected,
+    landmarksBuffer,
+    setLandmarksBuffer
   };
 }; 

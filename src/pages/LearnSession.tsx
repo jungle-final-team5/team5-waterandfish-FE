@@ -32,7 +32,7 @@ const LearnSession = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [transmissionCount, setTransmissionCount] = useState(0);
-  // URL state에서 lesson_mapper 가져오기
+  // URL state에서 lesson_mapper 가져오기너
   const [lesson_mapper, setLessonMapper] = useState<{ [key: string]: string }>(location.state?.lesson_mapper || {});
   const [currentWsUrl, setCurrentWsUrl] = useState<string>('');
   const [currentConnectionId, setCurrentConnectionId] = useState<string>('');
@@ -46,7 +46,34 @@ const LearnSession = () => {
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   const studyListRef = useRef<string[]>([]);
-  const [isBufferingPaused, setIsBufferingPaused] = useState(false);
+  const [isBufferingPaused, setIsBufferingPaused] = useState(true);
+
+  // MediaPipe holistic hook 사용
+  const {
+    videoRef,
+    canvasRef,
+    isInitialized,
+    isProcessing,
+    lastLandmarks,
+    startCamera,
+    stopCamera,
+    retryInitialization,
+    error,
+    inspect_sequence,
+    isRecording,
+    setIsRecording,
+    isConnected,
+    setIsConnected,
+    landmarksBuffer,
+    setLandmarksBuffer
+  } = useMediaPipeHolistic({
+    modelComplexity: 1,
+    smoothLandmarks: true,
+    enableSegmentation: false,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.5,
+    enableLogging: false // MediaPipe 내부 로그 숨김
+  });
 
   // WebGL 지원 확인
   useEffect(() => {
@@ -152,7 +179,9 @@ const LearnSession = () => {
     // connectionStatus가 변경될 때마다 isConnected 업데이트
     const isWsConnected = connectionStatus === 'connected' && wsList.length > 0;
     setIsConnected(isWsConnected);
-    console.log(`🔌 WebSocket 연결 상태: ${connectionStatus}, 연결된 소켓: ${wsList.length}개, isConnected: ${isWsConnected}`);
+    setIsRecording(isWsConnected);
+    alert(`isWsConnected: ${isWsConnected} isRecording: ${isRecording} isConnected: ${isConnected}`);
+    console.log(`🔌 WebSocket 연결 상태: ${connectionStatus}, 연결된 소켓: ${wsList.length}개, isWsConnected: ${isWsConnected} isRecording: ${isRecording} isConnected: ${isConnected}`);
   }, [connectionStatus, wsList.length]);
 
   // 분류 로그 및 결과 수신 처리
@@ -160,8 +189,6 @@ const LearnSession = () => {
   const [displayConfidence, setDisplayConfidence] = useState<string>('');
 
   const { showStatus } = useGlobalWebSocketStatus();
-
-  const [isConnected, setIsConnected] = useState<boolean>(false); // 초기값에 의해 타입 결정됨.
   const [isTransmitting, setIsTransmitting] = useState(false);
   const [currentResult, setCurrentResult] = useState<ClassificationResult | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -181,13 +208,10 @@ const LearnSession = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const currentSign = lessons[currentSignIndex];
   const currentSignId = lessons[currentSignIndex]?.id;
-  const [isRecording, setIsRecording] = useState(false);
 
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [sessionComplete, setSessionComplete] = useState(false);
 
-  // 랜드마크 버퍼링 관련 상태
-  const [landmarksBuffer, setLandmarksBuffer] = useState<LandmarksData[]>([]);
   const bufferIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const BUFFER_DURATION = 1000; // 2초
 
@@ -229,46 +253,6 @@ const LearnSession = () => {
     connectionId: currentConnectionId,
   });
 
-  // 랜드마크 감지 시 호출되는 콜백 (useCallback으로 먼저 정의)
-  const handleLandmarksDetected = useCallback((landmarks: LandmarksData) => {
-    console.log(`🎯 랜드마크 감지됨 - 녹화: ${isRecording}, 연결: ${isConnected}`);
-
-    // 녹화 중일 때만 버퍼에 추가
-    if (isRecording && isConnected) {
-      setLandmarksBuffer(prev => {
-        const newBuffer = [...prev, landmarks];
-        console.log(`📥 랜드마크 버퍼에 추가됨 (총 ${newBuffer.length}개)`);
-        return newBuffer;
-      });
-    } else {
-      console.log(`⚠️ 랜드마크 버퍼링 건너뜀 - 녹화: ${isRecording}, 연결: ${isConnected}`);
-    }
-  }, [isRecording, isConnected]);
-
-
-  // MediaPipe holistic hook 사용
-  const {
-    videoRef,
-    canvasRef,
-    isInitialized,
-    isProcessing,
-    lastLandmarks,
-    startCamera,
-    stopCamera,
-    retryInitialization,
-    error,
-    inspect_sequence
-  } = useMediaPipeHolistic({
-    onLandmarks: handleLandmarksDetected,
-    modelComplexity: 1,
-    smoothLandmarks: true,
-    enableSegmentation: false,
-    minDetectionConfidence: 0.7,
-    minTrackingConfidence: 0.5,
-    enableLogging: false // MediaPipe 내부 로그 숨김
-  });
-
-
   // 랜드마크 버퍼링 및 전송 처리
   useEffect(() => {
     // 녹화 중이고 연결된 상태일 때만 버퍼링 시작
@@ -280,39 +264,37 @@ const LearnSession = () => {
 
       // 2초마다 버퍼 전송
       bufferIntervalRef.current = setInterval(() => {
-        setLandmarksBuffer(prevBuffer => {
-          if (prevBuffer.length > 0) {
-            // 버퍼의 모든 랜드마크를 시퀀스로 전송
-            const landmarksSequence = {
-              type: 'landmarks_sequence',
-              data: {
-                sequence: prevBuffer,
-                timestamp: Date.now(),
-                frame_count: prevBuffer.length
-              }
-            };
-            const is_fast = inspect_sequence(landmarksSequence);
-            if (!is_fast) {
-              console.log('✅ 동작 속도 정상');
-              if (isBufferingPaused) {
-                setIsBufferingPaused(false);
-              }
-              sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
+        const currentBuffer = landmarksBuffer;
+        if (currentBuffer.length > 0) {
+          // 버퍼의 모든 랜드마크를 시퀀스로 전송
+          const landmarksSequence = {
+            type: 'landmarks_sequence',
+            data: {
+              sequence: currentBuffer,
+              timestamp: Date.now(),
+              frame_count: currentBuffer.length
             }
-            else {
-              console.log('❌ 동작 속도 빠름. 시퀸스 전송 건너뜀');
-              setDisplayConfidence("천천히 동작해주세요");
-              setIsBufferingPaused(true);
-              setLandmarksBuffer([]);
+          };
+          const is_fast = inspect_sequence(landmarksSequence);
+          if (!is_fast) {
+            console.log('✅ 동작 속도 정상');
+            if (isBufferingPaused) {
+              setIsBufferingPaused(false);
             }
-            setTransmissionCount(prev => prev + prevBuffer.length);
-            console.log(`📤 랜드마크 시퀀스 전송됨 (${prevBuffer.length}개 프레임)`);
-
-            // 버퍼 비우기
-            return [];
+            sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
           }
-          return prevBuffer;
-        });
+          else {
+            console.log('❌ 동작 속도 빠름. 시퀸스 전송 건너뜀');
+            setDisplayConfidence("천천히 동작해주세요");
+            setIsBufferingPaused(true);
+            setLandmarksBuffer([]);
+          }
+          setTransmissionCount(prev => prev + currentBuffer.length);
+          console.log(`📤 랜드마크 시퀀스 전송됨 (${currentBuffer.length}개 프레임)`);
+
+          // 버퍼 비우기
+          setLandmarksBuffer([]);
+        }
       }, BUFFER_DURATION);
 
       console.log('🔄 랜드마크 버퍼링 시작 (1초 간격)');
@@ -518,6 +500,7 @@ const LearnSession = () => {
     };
   }, [animData, currentFrame]);
 
+  // TODO: useWebsocket 훅에서 처리하는 것으로 변경 필요
   // 현재 수어에 대한 ws url 출력
   useEffect(() => {
     if (currentSignId) {
