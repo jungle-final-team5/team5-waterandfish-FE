@@ -30,7 +30,7 @@ const VideoInput: React.FC<VideoInputProps> = ({ // 비디오 입력 컴포넌�
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null); // 비디오 요소 참조
   const streamRef = useRef<MediaStream | null>(null); // 비디오 스트림 참조
-  
+
   const [isStreaming, setIsStreaming] = useState(false); // 스트리밍 상태
   const [error, setError] = useState<string | null>(null); // 에러 메시지
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]); // 비디오 장치 목록
@@ -39,11 +39,11 @@ const VideoInput: React.FC<VideoInputProps> = ({ // 비디오 입력 컴포넌�
 
   // 사용 가능한 카메라 장치 목록 가져오기
   const getVideoDevices = useCallback(async () => { // 비디오 장치 목록 가져
-    try { 
+    try {
       const devices = await navigator.mediaDevices.enumerateDevices(); // 모든 장치 목록 가져오기
       const videoDevices = devices.filter(device => device.kind === 'videoinput'); // 비디오 장치 목록 필터링
       setDevices(videoDevices);
-      
+
       if (videoDevices.length > 0 && !selectedDeviceId) { // 비디오 장치가 있고 선택된 장치가 없으면 첫 번째 장치 선택
         setSelectedDeviceId(videoDevices[0].deviceId); // 첫 번째 비디오 장치 선택
       }
@@ -54,13 +54,13 @@ const VideoInput: React.FC<VideoInputProps> = ({ // 비디오 입력 컴포넌�
   }, [selectedDeviceId]); // 의존성 배열에 selectedDeviceId 추가
 
   // 비디오 스트림 시작
-  const startVideo = useCallback(async () => { 
+  const startVideo = useCallback(async () => {
     try {
       setIsLoading(true); // 로딩 상태 설정
       setError(null); // 에러 메시지 초기화
 
       const constraints: MediaStreamConstraints = { // 비디오 스트림 제약 조건 설정
-        video: { 
+        video: {
           deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined, // 선택된 장치 ID 설정
           width: { ideal: width }, // 목표 너비
           height: { ideal: height }, // 목표 높이
@@ -69,27 +69,27 @@ const VideoInput: React.FC<VideoInputProps> = ({ // 비디오 입력 컴포넌�
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints); // 비디오 스트림 가져오기
-      
+
       if (videoRef.current) { // 비디오 요소가 존재하면
         videoRef.current.srcObject = stream; // 비디오 요소에 스트림 할당
         videoRef.current.onloadedmetadata = () => {
           videoRef.current?.play(); // 비디오 요소 재생
-        }; 
+        };
       }
 
       streamRef.current = stream; // 스트림 참조 업데이트
       setIsStreaming(true); // 스트리밍 상태 설정
-      
+
       // 콜백 호출
       if (onStreamReady) {
         onStreamReady(stream); // 스트림 준비 콜백 호출
       }
-      
+
     } catch (err) {
       console.error('Failed to start video:', err); // 비디오 시작 실패 시 에러 로깅
       const errorMessage = err instanceof Error ? err.message : '카메라 접근에 실패했습니다.'; // 에러 메시지 설정
       setError(errorMessage); // 에러 메시지 설정
-      
+
       if (onStreamError) {
         onStreamError(errorMessage); // 스트림 오류 콜백 호출
       }
@@ -116,7 +116,7 @@ const VideoInput: React.FC<VideoInputProps> = ({ // 비디오 입력 컴포넌�
   // 초기 설정
   useEffect(() => {
     getVideoDevices(); // 비디오 장치 목록 가져오기
-    
+
     if (autoStart) { // 자동 시작 설정이 활성화되어 있으면
       startVideo(); // 비디오 스트림 시작
     }
@@ -129,27 +129,7 @@ const VideoInput: React.FC<VideoInputProps> = ({ // 비디오 입력 컴포넌�
 
   return (
     <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          
-          {showControls && (
-            <div className="flex items-center space-x-2">
-              {/* 카메라 장치 선택 */}
-              {/* <Button
-                variant="outline"
-                size="sm"
-                onClick={startVideo}
-                disabled={isLoading}
-              >
-                <Camera className="h-4 w-4 mr-1" /> 시작
-              </Button> */}
-            </div>
-          )}
-        </CardTitle>
-      </CardHeader>
-      
       <CardContent>
-
         {/* 비디오 영역 */}
         <div className="relative w-[640px] h-[480px] mx-auto">
           <video
@@ -159,12 +139,11 @@ const VideoInput: React.FC<VideoInputProps> = ({ // 비디오 입력 컴포넌�
             muted
             width={width}
             height={height}
-            className={`w-full h-full bg-gray-900 rounded-lg object-cover ${
-              isStreaming ? '' : 'opacity-50'
-            }`}
+            className={`w-full h-full bg-gray-900 rounded-lg object-cover ${isStreaming ? '' : 'opacity-50'
+              }`}
             style={{ aspectRatio: `${width}/${height}`, transform: 'scaleX(-1)' }}
           />
-          
+
           {/* 상태 오버레이 */}
           {!isStreaming && !isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 rounded-lg w-[640px] h-[480px]">
@@ -175,7 +154,7 @@ const VideoInput: React.FC<VideoInputProps> = ({ // 비디오 입력 컴포넌�
               </div>
             </div>
           )}
-          
+
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 rounded-lg">
               <div className="text-center text-white">
@@ -187,7 +166,7 @@ const VideoInput: React.FC<VideoInputProps> = ({ // 비디오 입력 컴포넌�
         </div>
       </CardContent>
 
-            {/* 현재 수어 텍스트 표시 */}
+      {/* 현재 수어 텍스트 표시 */}
       <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
         <div className="text-center">
           <p className="text-sm text-blue-600 mb-2">따라해보세요</p>

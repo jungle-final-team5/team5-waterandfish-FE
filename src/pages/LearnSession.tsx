@@ -51,6 +51,7 @@ const LearnSession = () => {
   const [isBufferingPaused, setIsBufferingPaused] = useState(false);
 
   // WebGL 지원 확인
+  // TODO: 미디어파이프 훅으로 보내기
   useEffect(() => {
     const checkWebGL = () => {
       try {
@@ -161,10 +162,7 @@ const LearnSession = () => {
   }, [connectionStatus, wsList.length]);
 
   // 분류 로그 및 결과 수신 처리
-  const [logs, setLogs] = useState<any[]>([]);
   const [displayConfidence, setDisplayConfidence] = useState<string>('');
-
-  const { showStatus } = useGlobalWebSocketStatus();
 
   const [isConnected, setIsConnected] = useState<boolean>(false); // 초기값에 의해 타입 결정됨.
   const [isTransmitting, setIsTransmitting] = useState(false);
@@ -209,32 +207,28 @@ const LearnSession = () => {
   //const category = categoryId ? findCategoryById(categoryId) : null;
   const [isMovingNextSign, setIsMovingNextSign] = useState(false);
   const transmissionIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const detectTimer = useRef<NodeJS.Timeout | null>(null);
 
 
   // 비디오 스트리밍 훅
-  const {
-    isStreaming,
-    streamingStatus,
-    currentStream,
-    streamInfo,
-    streamingConfig,
-    streamingStats,
-    // canvasRef,
-    // videoRef,
-    startStreaming,
-    stopStreaming,
-    setStreamingConfig,
-    handleStreamReady,
-    handleStreamError,
-  } = useVideoStreaming({
-    connectionStatus,
-    broadcastMessage,
-    sendMessage,
-    connectionId: currentConnectionId,
-  });
+  // const {
+  //   isStreaming,
+  //   streamingStatus,
+  //   currentStream,
+  //   streamingConfig,
+  //   startStreaming,
+  //   stopStreaming,
+  //   setStreamingConfig,
+  //   handleStreamReady,
+  //   handleStreamError,
+  // } = useVideoStreaming({
+  //   connectionStatus,
+  //   broadcastMessage,
+  //   sendMessage,
+  //   connectionId: currentConnectionId,
+  // });
 
   // 랜드마크 감지 시 호출되는 콜백 (useCallback으로 먼저 정의)
+  // TODO: 미디어파이프 훅으로 보내기
   const handleLandmarksDetected = useCallback((landmarks: LandmarksData) => {
     console.log(`🎯 랜드마크 감지됨 - 녹화: ${isRecording}, 연결: ${isConnected}`);
 
@@ -668,22 +662,22 @@ const LearnSession = () => {
               height={480}
               autoStart={true}
               showControls={true}
-              onStreamReady={handleStreamReady}
-              onStreamError={handleStreamError}
+              // onStreamReady={handleStreamReady}
+              // onStreamError={handleStreamError}
               className="h-full"
               currentSign={currentSign}
               currentResult={displayConfidence}
             />
 
             <StreamingControls
-              isStreaming={isStreaming}
+              /* isStreaming={isStreaming}
               streamingStatus={streamingStatus}
               streamingConfig={streamingConfig}
               currentStream={currentStream}
               connectionStatus={connectionStatus}
               onStartStreaming={startStreaming}
               onStopStreaming={stopStreaming}
-              onConfigChange={setStreamingConfig}
+              onConfigChange={setStreamingConfig} */
               transitionSign={handleNextSign}
             />
 
