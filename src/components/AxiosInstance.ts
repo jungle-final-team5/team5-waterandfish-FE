@@ -23,7 +23,7 @@ const API = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   timeout: 30000, // 30초 타임아웃
   headers: {
-    'Content-Type': 'application/json',
+    // 'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
   withCredentials: true, // 쿠키를 포함하여 요청

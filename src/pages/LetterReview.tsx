@@ -11,7 +11,7 @@ import LetterDisplay from '@/components/LetterDisplay';
 import { Hands } from '@mediapipe/hands';
 import { set } from 'lodash';
 
-const LetterSession = () => {
+const LetterReview = () => {
   const [gesture, setGesture] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCameraInitializing, setIsCameraInitializing] = useState(true);
@@ -41,61 +41,38 @@ const LetterSession = () => {
         pileref.current.textContent = '';
     }
     const studyResultRef = useRef<string[]>([]);
-    const { setType,qOrs } = useParams();
-    const [sets] = useState(() => {
-    if (setType === 'consonant') {
-      return ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-    } else if (setType === 'vowel') {
-      return ['ㅏ', 'ㅑ', 'ㅓ', 'ㅕ','ㅗ','ㅛ','ㅜ','ㅠ','ㅡ','ㅣ'];
-    } else {
-      return ["수어지교","기초연습"];
-    }
-  });
+    const { setType } = useParams();
+    const [sets, setSets] = useState<string[]>([]);
+
+    useEffect(() => {
+      if (setType === 'consonant' || setType === 'vowel') {
+        API.get(`progress/failures/letter/${setType}`).then(res => {
+          setSets(res.data.data || []);
+        });
+      } else {
+        setSets(["수어지교", "기초연습"]);
+      }
+    }, [setType]);
   const CHO = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
   const JUNG = ["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"];
   const JONG = ["", "ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
   const doublesc = {'ㄲ':'ㄱ'+'ㄱ','ㄳ':'ㄱ'+'ㅅ','ㄵ':'ㄴ'+'ㅈ','ㄶ':'ㄴ'+'ㅎ','ㄸ':'ㄷ'+'ㄷ','ㄺ':'ㄹ'+'ㄱ','ㄻ':'ㄹ'+'ㅁ',
                     'ㄼ':'ㄹ'+'ㅂ','ㄽ':'ㄹ'+'ㅅ','ㄾ':'ㄹ'+'ㅌ','ㄿ':'ㄹ'+'ㅍ','ㅀ':'ㄹ'+'ㅎ','ㅄ':'ㅂ'+'ㅅ','ㅆ':'ㅅ'+'ㅅ','ㅉ':'ㅈ'+'ㅈ',
                     'ㅘ':'ㅗ'+'ㅏ','ㅙ':'ㅗ'+'ㅐ','ㅝ':'ㅜ'+'ㅓ','ㅞ':'ㅜ'+'ㅔ'};
-  const sendQuizResult = async () => {
-    const passedLetters = JSON.parse(localStorage.getItem('passed') || '[]');
-    const failedLetters = JSON.parse(localStorage.getItem('failed') || '[]');
+  const sendreviewResult = async () => {
 
     try {
       await API.post(
-        'study/letters/result',
-        {
-          passed: passedLetters,
-          failed: failedLetters,
-        },
+        'review/mark/letter/' + setType,
+        {},
         {
           withCredentials: true, // ✅ 쿠키 포함
         }
       );
       console.log("결과 전송 완료");
       // 선택: localStorage 초기화
-      localStorage.removeItem('passed');
-      localStorage.removeItem('failed');
-    } catch (error) {
-      console.error("결과 전송 실패", error);
-    }
-  };
-  const sendstudyResult = async () => {
-
-    try {
-      await API.post(
-        'study/letters',
-        {
-          checked: studyResultRef.current,
-        },
-        {
-          withCredentials: true, // ✅ 쿠키 포함
-        }
-      );
-      console.log("결과 전송 완료");
-      // 선택: localStorage 초기화
-      localStorage.removeItem('passed');
-      localStorage.removeItem('failed');
+      // localStorage.removeItem('passed');
+      // localStorage.removeItem('failed');
     } catch (error) {
       console.error("결과 전송 실패", error);
     }
@@ -105,7 +82,6 @@ const LetterSession = () => {
   const [isDone, setIsDone] = useState(false);
 
   const times = useRef(10);
-  const [qors, setQors] = useState<boolean>(qOrs === 'quiz');
   const timeref = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -216,10 +192,7 @@ const LetterSession = () => {
       
       // 약간의 지연을 두어 정리가 완료되도록 함
       await new Promise(resolve => setTimeout(resolve, 3000));
-      if(qors === true){
-        times.current = 10;
-      }
-           console.log('MediaPipe Hands dynamic load via hands.js');
+          console.log('MediaPipe Hands dynamic load via hands.js');
       // ESM entrypoint인 hands.js를 직접 불러와 실제 클래스 가져오기 (CDN)
 // 전역으로 로드된 Hands 생성자 사용
 const HandsConstructor = (window as any).Hands;
@@ -430,53 +403,49 @@ console.log('MediaPipe Hands instance created via global script');
   
 
 
-  const timedown = () => {
-    if (times.current === 1) {
-      times.current -= 1;
-      std.current = false;
-      navigated.current = true;
-      if (decref.current) decref.current.textContent = '실패';
-      if (timeref.current) timeref.current.textContent = times.current.toString();
+  // const timedown = () => {
+  //   if (times.current === 1) {
+  //     times.current -= 1;
+  //     std.current = false;
+  //     navigated.current = true;
+  //     if (decref.current) decref.current.textContent = '실패';
+  //     if (timeref.current) timeref.current.textContent = times.current.toString();
 
-      const failedChar = sets[currentIndex];
-      const prevFailed = JSON.parse(localStorage.getItem('failed') || '[]');
+  //     const failedChar = sets[currentIndex];
+  //     const prevFailed = JSON.parse(localStorage.getItem('failed') || '[]');
 
-      const newFailed = prevFailed.filter((c: string) => c !== failedChar);
-      newFailed.push(failedChar);
+  //     const newFailed = prevFailed.filter((c: string) => c !== failedChar);
+  //     newFailed.push(failedChar);
 
-      localStorage.setItem('failed', JSON.stringify(newFailed));
+  //     localStorage.setItem('failed', JSON.stringify(newFailed));
 
-      setIsDone(true);
-      setTimeout(handleNext, 2000);
-    } else if (times.current > 1) {
-      times.current -= 1;
-      if (timeref.current) {
-        timeref.current.textContent = times.current.toString();
-      }
-    }
+  //     setIsDone(true);
+  //     setTimeout(handleNext, 2000);
+  //   } else if (times.current > 1) {
+  //     times.current -= 1;
+  //     if (timeref.current) {
+  //       timeref.current.textContent = times.current.toString();
+  //     }
+  //   }
 
-    if (std.current) {
-      setTimeout(timedown, 1000);
-    }
-  };
+  //   if (std.current) {
+  //     setTimeout(timedown, 1000);
+  //   }
+  // };
 
-  const divword = (word: string) => {
-    if (!decref.current || !pileref.current) return;
-    decref.current.textContent = '';
-    setIsDone(false);
-    for (let i = 0; i < word.length; i++) {
-      const char = word[i];
-      const code = char.charCodeAt(0);
-      if (code >= 0x3131 && code <= 0x318E) {
-        decref.current.textContent += char;
-      }
-    }
-    pileref.current.textContent = '';
-    if(qors){
-      times.current = 10;
-      if (timeref.current) timeref.current.textContent = times.current.toString();
-    }
-  };
+  // const divword = (word: string) => {
+  //   if (!decref.current || !pileref.current) return;
+  //   decref.current.textContent = '';
+  //   setIsDone(false);
+  //   for (let i = 0; i < word.length; i++) {
+  //     const char = word[i];
+  //     const code = char.charCodeAt(0);
+  //     if (code >= 0x3131 && code <= 0x318E) {
+  //       decref.current.textContent += char;
+  //     }
+  //   }
+  //   pileref.current.textContent = '';
+  // };
 
 // 타이머 관련 상태 추가
 const [gestureRecognitionActive, setGestureRecognitionActive] = useState(false);
@@ -484,11 +453,8 @@ const gestureTimerRef = useRef<NodeJS.Timeout | null>(null);
 const startTimeRef = useRef<number | null>(null);
 useEffect(() => {
   if (isDone && currentIndex === sets.length) {
-    if(!qors){
-      sendstudyResult();
-    }
-    else{
-    sendQuizResult();}
+      sendreviewResult();
+    
   }
 }, [isDone, currentIndex]);
 useEffect(() => {
@@ -538,18 +504,12 @@ useEffect(() => {
             decref.current.textContent = '통과';
             setIsDone(true);
             
-            if(qors){
-              const passedChar = sets[currentIndex];
-              const prevPassed = JSON.parse(localStorage.getItem('passed') || '[]');
-              const newPassed = prevPassed.filter((c: string) => c !== passedChar);
-              newPassed.push(passedChar);
-              localStorage.setItem('passed', JSON.stringify(newPassed));
-            }else{
+            
               const studyChar = sets[currentIndex];
               if (!studyResultRef.current.includes(studyChar)) {
                   studyResultRef.current.push(studyChar);
                 }
-            }
+            
             setTimeout(handleNext, 2000);
           }
           }
@@ -591,25 +551,25 @@ useEffect(() => {
   };
 }, [gesture]); // eslint-disable-line react-hooks/exhaustive-deps
 
+
   useEffect(() => {
-    setWords(sets[currentIndex]);
-  }, [currentIndex]);
+    if (sets.length > 0 && currentIndex < sets.length) {
+      setWords(sets[currentIndex]);
+    }
+  }, [sets, currentIndex]);
 
   useEffect(() => {
     if (!words) return;
     std.current = true;
     divwords(words);
     
-    if(qors){
-      setTimeout(timedown, 1000);
-    }
   }, [words]);
 
   useEffect(() => {
 
     // 예시: 'passed'와 'failed' 키 초기화
-    localStorage.removeItem('passed');
-    localStorage.removeItem('failed');
+    // localStorage.removeItem('passed');
+    // localStorage.removeItem('failed');
     setIsDone(false);
     setCurrentIndex(0);
     // 컴포넌트 마운트 시 카메라 초기화를 약간 지연시켜 DOM이 렌더링될 시간을 줌
@@ -640,24 +600,13 @@ useEffect(() => {
       return (
           <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-          {!qors ? (
-            <Button onClick={() => {
-              const url = `/test/letter/${setType}/quiz`;
-              setIsDone(false);
-              setCurrentIndex(0);
-              setQors(true);
-              initializeCamera(); // MediaPipe 재초기화
-              navigate(url);
-            }}>
-              퀴즈로
-            </Button>
-          ) : (
+          
             <Button onClick={() => {
               navigate(`/category`);
             }}>
               결과 전송
             </Button>
-          )}
+          
           <Button onClick={() => navigate('/home')}>돌아가기</Button>
         </div>
       </div>
@@ -678,22 +627,11 @@ useEffect(() => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {qors?(<div className="space-y-6">
+          <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>현재 문제</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div ref={decref} className="text-8xl text-center font-bold" />
-                <div ref={timeref} className="text-center text-8xl font-extrabold text-gray-800 mt-2" />
-                <div ref={pileref} className="text-center text-6xl mt-4" />
-              </CardContent>
-            </Card>
-          </div>):(<div className="space-y-6">
-            <Card>
-              <CardHeader>
-                {setType === 'consonant'?(<CardTitle>자음 연습</CardTitle>):
-                (<CardTitle>모음 연습</CardTitle>)}
+                {setType === 'consonant'?(<CardTitle>자음 복습</CardTitle>):
+                (<CardTitle>모음 복습</CardTitle>)}
 {/* 빈 트랙은 항상 */}
 <div className="mt-2">
   <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -715,11 +653,26 @@ useEffect(() => {
               </CardHeader>
               <CardContent>
                 <div ref={decref} className="text-5xl text-center font-bold" />
-                  <LetterDisplay isVowel={setType !== 'consonant'} progress={currentIndex + 1}/>
+                  {/* 자음/모음에 따라 이미지로 표시 */}
+                  {sets[currentIndex] && (
+                    setType === 'consonant' ? (
+                      <img
+                        src={`/consonant.jpg`}
+                        alt={sets[currentIndex]}
+                        className="mx-auto w-32 h-32 object-contain"
+                      />
+                    ) : setType === 'vowel' ? (
+                      <img
+                        src={`/vowel.jpg`}
+                        alt={sets[currentIndex]}
+                        className="mx-auto w-32 h-32 object-contain"
+                      />
+                    ) : null
+                  )}
                 <div ref={pileref} className="text-center text-3xl mt-4" />
               </CardContent>
             </Card>
-          </div>)}
+          </div>
 
           <div className="space-y-6">
             <Card>
@@ -778,4 +731,4 @@ useEffect(() => {
   );
 };
 
-export default LetterSession;
+export default LetterReview;

@@ -28,7 +28,9 @@ import ReviewSession from "./pages/ReviewSession";
 import MediaPipeSession from "./pages/MediaPipeSession";
 import SessionBegin from "./pages/SessionBegin";
 import SessionComplete from "./pages/SessionComplete";
+import LetterReview from "./pages/LetterReview";
 import LocationContext from "@/contexts/LocationContext";
+
 
 const queryClient = new QueryClient();
 
@@ -60,6 +62,7 @@ const App = () => (
                 <Route path="/review/chapter/:chapterId" element={<ProtectedRoute><ReviewSession /></ProtectedRoute>} />
                 <Route path="/quiz/chapter/:chapterId/review" element={<ProtectedRoute><QuizReview /></ProtectedRoute>} />
                 <Route path="/test/letter/:setType/:qOrs" element={<ProtectedRoute><LetterSession /></ProtectedRoute>} />
+                <Route path="/review/letter/:setType/" element={<ProtectedRoute><LetterReview /></ProtectedRoute>}/>
                 <Route path="/complete/chapter/:chapterId/:modeNum" element={<ProtectedRoute><SessionComplete /></ProtectedRoute>} />
                 <Route path="/review" element={<ProtectedRoute><Review /></ProtectedRoute>} />
                 <Route path="/search" element={<SearchPage />} />

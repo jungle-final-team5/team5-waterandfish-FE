@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import API from '@/components/AxiosInstance';
 
 interface VideoUploadModalProps {
   open: boolean;
@@ -57,7 +58,7 @@ export const VideoUploadModal = ({ open, onClose, onSave }: VideoUploadModalProp
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedFile || !label.trim()) {
       toast({
         title: "필수 정보 누락",
@@ -67,16 +68,31 @@ export const VideoUploadModal = ({ open, onClose, onSave }: VideoUploadModalProp
       return;
     }
 
-    onSave({
-      file: selectedFile,
-      label: label.trim(),
-      description: description.trim(),
-    });
+    const formData = new FormData();
+    formData.append("label", label.trim());
+    formData.append("video", selectedFile);
 
-    // Reset form
-    setSelectedFile(null);
-    setLabel('');
-    setDescription('');
+    try {
+      await API.post("/upload-sign-video", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      toast({
+        title: "업로드 성공",
+        description: "영상이 성공적으로 업로드되었습니다.",
+        variant: "default",
+      });
+      // Reset form and close modal
+      setSelectedFile(null);
+      setLabel('');
+      setDescription('');
+      onClose();
+    } catch (e: any) {
+      toast({
+        title: "업로드 실패",
+        description: e?.response?.data?.detail || e.message || "업로드 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleClose = () => {

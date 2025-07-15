@@ -116,44 +116,57 @@ const Review = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {chapterGroups.map((group, index) => (
-              <Card
-                key={index}
-                className="hover:shadow-lg transition-shadow rounded-lg p-6 flex flex-col min-h-[180px]"
-              >
-                <CardHeader className="p-0 mb-2">
-                  <CardTitle className="flex items-center space-x-3 text-2xl font-bold text-blue-700">
-                    <span className="text-3xl">📚</span>
-                    <span>{group.chapter_title}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="text-gray-600 text-sm mt-4 mb-2">
-                    {" "}
-                    <span className="font-semibold text-lg text-gray-800">
-                      {group.lessons.map(sign => sign.word).join("  |   ")}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mt-4">
-                    <span />
-                    <Button
-                      size="sm"
-                      className="w-28"
-                      onClick={e => {
-                        e.stopPropagation();
-                        if (group.lessons.length > 0) {
-                          navigate(`/learn/chapter/${group.lessons[0].id}/guide/3`);
-                        }
-                      }}
-                    >
-                      복습하기
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          (() => {
+            // 자음/모음 챕터 그룹 1개씩만 추출
+            const consonantGroup = chapterGroups.find(g => g.chapter_title === "자음");
+            const vowelGroup = chapterGroups.find(g => g.chapter_title === "모음");
+            const otherGroups = chapterGroups.filter(g => g.chapter_title !== "자음" && g.chapter_title !== "모음");
+            // 렌더링할 그룹 배열
+            const renderGroups = [consonantGroup, vowelGroup, ...otherGroups].filter(Boolean);
+            return (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {renderGroups.map((group, index) => (
+                  <Card
+                    key={index}
+                    className="hover:shadow-lg transition-shadow rounded-lg p-6 flex flex-col min-h-[180px]"
+                  >
+                    <CardHeader className="p-0 mb-2">
+                      <CardTitle className="flex items-center space-x-3 text-2xl font-bold text-blue-700">
+                        <span className="text-3xl">📚</span>
+                        <span>{group.chapter_title}</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="text-gray-600 text-sm mt-4 mb-2">
+                        <span className="font-semibold text-lg text-gray-800">
+                          {group.lessons.map(sign => sign.word).join("  |   ")}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-4">
+                        <span />
+                        <Button
+                          size="sm"
+                          className="w-28"
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (group.chapter_title === "자음") {
+                              navigate("/review/letter/consonant");
+                            } else if (group.chapter_title === "모음") {
+                              navigate("/review/letter/vowel");
+                            } else if (group.lessons.length > 0) {
+                              navigate(`/learn/chapter/${group.lessons[0].id}/guide/3`);
+                            }
+                          }}
+                        >
+                          복습하기
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            );
+          })()
         )}
       </main>
       {/* Bottom Navigation */}
