@@ -270,17 +270,19 @@ const Learn = () => {
       .then(res => {
         setWsUrl(res.data.data.ws_url);
         // Home.tsx처럼 lesson_mapper에 직접 할당
-        setLessonMapper(prev => ({
-          ...prev,
-          [lessonId]: res.data.data.ws_url
-        }));
+        setLessonMapper(prev => {
+          const newMapper = { ...prev, [lessonId]: res.data.data.ws_url };
+          // lessonMapper가 세팅된 후 currentSignId를 다시 세팅하여 분류 트리거
+          setCurrentSignId(lessonId);
+          return newMapper;
+        });
         setWsUrlLoading(false);
       })
       .catch(() => {
         setWsUrl(null);
         setWsUrlLoading(false);
       });
-  }, [lessonId]);
+  }, [lessonId, setCurrentSignId, setLessonMapper]);
 
   // 애니메이션 데이터 로딩
   useEffect(() => {
@@ -420,15 +422,35 @@ const Learn = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SessionHeader
-        currentMode={"단일 학습"}
-        chapterId={""}
-        currentSignIndex={1}
-        progress={progress}
-        categoryId={undefined}
-        navigate={navigate}
-        feedback={feedback}
-      />
+      {/* 상단 헤더: 현재 학습 중인 단어 */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/home')}
+              className="hover:bg-blue-50"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              홈으로
+            </Button>
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <h1 className="text-2xl font-bold text-gray-800 mb-2">{lesson?.word ?? lesson?.sign_text ?? lessonId ?? ''}</h1>
+              {/* 진행률 프로그레스 바 */}
+              <div className="flex flex-col items-center w-40">
+                <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className="h-2 bg-blue-500 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((correctCount / 3) * 100, 100)}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm text-gray-500 font-medium mt-1">{Math.min(correctCount, 3)}/3</span>
+              </div>
+            </div>
+            <div style={{ width: '40px' }} /> {/* 오른쪽 공간 맞춤용 */}
+          </div>
+        </div>
+      </header>
 
       <div className="grid lg:grid-cols-2 gap-12">
               <div className="mt-12 p-3 bg-gray-100 rounded-md">
