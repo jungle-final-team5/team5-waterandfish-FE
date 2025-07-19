@@ -181,9 +181,7 @@ const Dashboard: React.FC = () => {
     if (currentTime < 18) return '좋은 오후입니다';
     return '좋은 저녁입니다';
   };
-  useEffect(() => {
-    disconnectWebSockets();
-  }, []);
+  
   // 데이터 패칭
   useEffect(() => {
     disconnectWebSockets();
