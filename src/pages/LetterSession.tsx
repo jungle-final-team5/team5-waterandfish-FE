@@ -94,10 +94,15 @@ const LetterSession = () => {
           withCredentials: true, // ✅ 쿠키 포함
         }
       );
+      await API.post("/study/sessions/complete/letter",{
+        lettertype: setType === 'consonant' ? '자음' : '모음'
+      }, {
+        withCredentials: true, // ✅ 쿠키 포함
+      });
       console.log("결과 전송 완료");
       // 선택: localStorage 초기화
-      localStorage.removeItem('passed');
-      localStorage.removeItem('failed');
+      // localStorage.removeItem('passed');
+      // localStorage.removeItem('failed');
     } catch (error) {
       console.error("결과 전송 실패", error);
     }
