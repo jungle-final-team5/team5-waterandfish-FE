@@ -175,7 +175,7 @@ const SessionBegin = () => {
                       <li className="flex items-start text-lg">
                         <span className="w-2 h-2 bg-indigo-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
 
-                        틀린 문제는 자동으로 복습 목록에 추가됩니다
+                        수어 동작은 무릎에서 시작하고 무릎에서 끝나야 합니다.
                       </li>
                     </>
                   )}
