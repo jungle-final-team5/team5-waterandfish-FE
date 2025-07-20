@@ -161,13 +161,13 @@ const LearnSession = () => {
                     console.log('bufferingPauseTime 0 됨');
                     return 0;
                   }
-                  else{
+                  else {
                     return newTime;
                   }
                 });
               }
               console.log("sendMessage 호출");
-              if(!isBufferingPaused){
+              if (!isBufferingPaused) {
                 sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
               }
             } else {

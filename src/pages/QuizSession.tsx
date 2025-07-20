@@ -182,13 +182,13 @@ const QuizSession = () => {
                     console.log('bufferingPauseTime 0 됨');
                     return 0;
                   }
-                  else{
+                  else {
                     return newTime;
                   }
                 });
               }
               console.log("sendMessage 호출");
-              if(!isBufferingPaused){
+              if (!isBufferingPaused) {
                 sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
               }
             } else {
@@ -242,30 +242,30 @@ const QuizSession = () => {
     setIsRecording(true);
     return () => {
       disconnectWebSockets();
-      
+
     }
   }, []);
 
-  if(sessionComplete){
-   // 1. 레슨 상태 업데이트
-   API.post(`/progress/chapters/${chapterId}/lessons`, {
-    lesson_ids: lessons.map((l) => l.id),
-    status: 'study',
-  })
-    .then(() => {
-      // 2. 챕터 완료(진도 증가) API 호출
-      return API.post('/study/sessions/complete', { chapter_id: chapterId });
+  if (sessionComplete) {
+    // 1. 레슨 상태 업데이트
+    API.post(`/progress/chapters/${chapterId}/lessons`, {
+      lesson_ids: lessons.map((l) => l.id),
+      status: 'study',
     })
-    .then(() => {
-      // 3. 완료 페이지로 이동
-      navigate(`/complete/chapter/${chapterId}/${1}`);
-    });
-  // eslint-disable-next-line
-  // 버퍼링 타이머 정리
-  if (bufferIntervalRef.current) {
-    clearInterval(bufferIntervalRef.current);
-    bufferIntervalRef.current = null;
-  } 
+      .then(() => {
+        // 2. 챕터 완료(진도 증가) API 호출
+        return API.post('/study/sessions/complete', { chapter_id: chapterId });
+      })
+      .then(() => {
+        // 3. 완료 페이지로 이동
+        navigate(`/complete/chapter/${chapterId}/${1}`);
+      });
+    // eslint-disable-next-line
+    // 버퍼링 타이머 정리
+    if (bufferIntervalRef.current) {
+      clearInterval(bufferIntervalRef.current);
+      bufferIntervalRef.current = null;
+    }
   }
 
   //===============================================
