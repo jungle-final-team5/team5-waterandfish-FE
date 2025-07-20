@@ -36,6 +36,7 @@ export const useClassifierClient = () => {
     const [displayConfidence, setDisplayConfidence] = useState<string>('');
     const [maxConfidence, setMaxConfidence] = useState<number>(0);
     const [isBufferingPaused, setIsBufferingPaused] = useState<boolean>(false);
+    const [bufferingPauseTime, setBufferingPauseTime] = useState<number>(0);
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
     // refs
@@ -285,7 +286,7 @@ export const useClassifierClient = () => {
         isBufferingPaused,
         isInitialized,
         studyList: studyListRef.current,
-        
+        bufferingPauseTime,
         // 상태 설정 함수들
         setCurrentSignId,
         setCurrentSign,
@@ -294,7 +295,7 @@ export const useClassifierClient = () => {
         setDisplayConfidence,
         setMaxConfidence,
         setIsBufferingPaused,
-        
+        setBufferingPauseTime,
         // 재시도 함수들
         retryLessonMapper,
         retryWsConnection,

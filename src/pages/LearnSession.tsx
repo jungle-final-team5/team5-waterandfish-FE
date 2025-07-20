@@ -44,6 +44,8 @@ const LearnSession = () => {
     displayConfidence,
     maxConfidence,
     isBufferingPaused,
+    bufferingPauseTime,
+    setBufferingPauseTime,
     studyList,
     setCurrentSignId,
     setCurrentSign,
@@ -148,19 +150,35 @@ const LearnSession = () => {
             };
             const is_fast = inspect_sequence(landmarksSequence);
             if (!is_fast) {
-              console.log('✅ 동작 속도 정상');
-              if (isBufferingPaused) {
-                setIsBufferingPaused(false);
+              // console.log('✅ 동작 속도 정상');
+              if (isBufferingPaused && bufferingPauseTime > 0) {
+                console.log('bufferingPauseTime:', bufferingPauseTime);
+                setBufferingPauseTime(prev => {
+                  const newTime = prev - 1000;
+                  console.log('newTime:', newTime);
+                  if (newTime <= 0) {
+                    setIsBufferingPaused(false);
+                    console.log('bufferingPauseTime 0 됨');
+                    return 0;
+                  }
+                  else{
+                    return newTime;
+                  }
+                });
               }
-              sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
+              console.log("sendMessage 호출");
+              if(!isBufferingPaused){
+                sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
+              }
             } else {
               console.log('❌ 동작 속도 빠름. 시퀸스 전송 건너뜀');
               setDisplayConfidence('천천히 동작해주세요');
               setIsBufferingPaused(true);
+              setBufferingPauseTime(3000);
               setLandmarksBuffer([]);
             }
             setTransmissionCount((prev) => prev + prevBuffer.length);
-            console.log(`📤 랜드마크 시퀀스 전송됨 (${prevBuffer.length}개 프레임)`);
+            // console.log(`📤 랜드마크 시퀀스 전송됨 (${prevBuffer.length}개 프레임)`);
 
             // 버퍼 비우기
             return [];
@@ -169,7 +187,7 @@ const LearnSession = () => {
         });
       }, BUFFER_DURATION);
 
-      console.log('🔄 랜드마크 버퍼링 시작 (1초 간격)');
+      // console.log('🔄 랜드마크 버퍼링 시작 (1초 간격)');
     } else {
       // 녹화 중이 아니거나 연결이 끊어진 경우 타이머 정리
       if (bufferIntervalRef.current) {
