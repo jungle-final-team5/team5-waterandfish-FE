@@ -40,6 +40,8 @@ const QuizSession = () => {
     isRetrying,
     isConnected,
     currentConnectionId,
+    bufferingPauseTime,
+    setBufferingPauseTime,
     currentWsUrl,
     lessonMapper,
     currentSignId,
@@ -156,7 +158,7 @@ const QuizSession = () => {
 
       // 2초마다 버퍼 전송
       bufferIntervalRef.current = setInterval(() => {
-        setLandmarksBuffer(prevBuffer => {
+        setLandmarksBuffer((prevBuffer) => {
           if (prevBuffer.length > 0) {
             // 버퍼의 모든 랜드마크를 시퀀스로 전송
             const landmarksSequence = {
@@ -164,24 +166,39 @@ const QuizSession = () => {
               data: {
                 sequence: prevBuffer,
                 timestamp: Date.now(),
-                frame_count: prevBuffer.length
-              }
+                frame_count: prevBuffer.length,
+              },
             };
             const is_fast = inspect_sequence(landmarksSequence);
             if (!is_fast) {
               // console.log('✅ 동작 속도 정상');
-              if (isBufferingPaused) {
-                setIsBufferingPaused(false);
+              if (isBufferingPaused && bufferingPauseTime > 0) {
+                console.log('bufferingPauseTime:', bufferingPauseTime);
+                setBufferingPauseTime(prev => {
+                  const newTime = prev - 1000;
+                  console.log('newTime:', newTime);
+                  if (newTime <= 0) {
+                    setIsBufferingPaused(false);
+                    console.log('bufferingPauseTime 0 됨');
+                    return 0;
+                  }
+                  else{
+                    return newTime;
+                  }
+                });
               }
-              sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
-            }
-            else {
-              // console.log('❌ 동작 속도 빠름. 시퀸스 전송 건너뜀');
-              setDisplayConfidence("천천히 동작해주세요");
+              console.log("sendMessage 호출");
+              if(!isBufferingPaused){
+                sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
+              }
+            } else {
+              console.log('❌ 동작 속도 빠름. 시퀸스 전송 건너뜀');
+              setDisplayConfidence('천천히 동작해주세요');
               setIsBufferingPaused(true);
+              setBufferingPauseTime(3000);
               setLandmarksBuffer([]);
             }
-            setTransmissionCount(prev => prev + prevBuffer.length);
+            setTransmissionCount((prev) => prev + prevBuffer.length);
             // console.log(`📤 랜드마크 시퀀스 전송됨 (${prevBuffer.length}개 프레임)`);
 
             // 버퍼 비우기
@@ -210,7 +227,16 @@ const QuizSession = () => {
         bufferIntervalRef.current = null;
       }
     };
-  }, [isRecording, isConnected, currentConnectionId, sendMessage, isBufferingPaused, currentResult]);
+  }, [
+    isRecording,
+    isConnected,
+    currentConnectionId,
+    sendMessage,
+    isBufferingPaused,
+    currentResult,
+    setDisplayConfidence,
+    setIsBufferingPaused,
+  ]);
 
   useEffect(() => {
     setIsRecording(true);
