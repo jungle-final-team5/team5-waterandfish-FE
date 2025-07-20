@@ -28,7 +28,7 @@ const QuizTimer = ({ duration, onTimeUp, isActive, onTimeChange }: QuizTimerProp
     console.log('🔄 타이머 카운트다운 시작');
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
-        console.log('⏱️ 타이머:', prev, '초 남음');
+        // console.log('⏱️ 타이머:', prev, '초 남음');
         if (prev <= 1) {
           console.log('⏰ 시간 초과!');
           onTimeUp();

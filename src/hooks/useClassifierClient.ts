@@ -107,7 +107,7 @@ export const useClassifierClient = () => {
             RETRY_CONFIG.maxDelay
         );
 
-        console.log(`[LearnSession] WebSocket 연결 재시도 ${retryAttempts.wsConnection + 1}/${RETRY_CONFIG.maxAttempts} (${delay}ms 후)`);
+        // console.log(`[LearnSession] WebSocket 연결 재시도 ${retryAttempts.wsConnection + 1}/${RETRY_CONFIG.maxAttempts} (${delay}ms 후)`);
 
         retryTimeoutRef.current = setTimeout(() => {
             const connection = getConnectionByUrl(targetUrl);
@@ -131,7 +131,10 @@ export const useClassifierClient = () => {
         // connectionStatus가 변경될 때마다 isConnected 업데이트
         const isWsConnected = connectionStatus === 'connected' && wsList.length > 0;
         setIsConnected(isWsConnected);
-        console.log(`🔌 WebSocket 연결 상태: ${connectionStatus}, 연결된 소켓: ${wsList.length}개, isConnected: ${isWsConnected}`);
+        // 연결 상태가 변경될 때만 로그 출력
+        if (isWsConnected !== (connectionStatus === 'connected' && wsList.length > 0)) {
+            console.log(`🔌 WebSocket 연결 상태: ${connectionStatus}, 연결된 소켓: ${wsList.length}개`);
+        }
     }, [connectionStatus, wsList.length]);
 
     // 이전 connectionId 추적을 위한 ref
@@ -143,7 +146,7 @@ export const useClassifierClient = () => {
         if (currentConnectionId &&
             currentConnectionId !== prevConnectionIdRef.current &&
             prevConnectionIdRef.current !== '') {
-            console.log('[LearnSession] connectionId 변경 감지:', prevConnectionIdRef.current, '->', currentConnectionId);
+            console.log('[LearnSession] connectionId 변경:', prevConnectionIdRef.current, '->', currentConnectionId);
         }
         // connectionId 업데이트
         if (currentConnectionId) {
@@ -159,17 +162,14 @@ export const useClassifierClient = () => {
         }
 
         if (currentSignId) {
-            console.log('[LearnSession] currentSignId:', currentSignId);
             const wsUrl = lessonMapper[currentSignId] || '';
             setCurrentWsUrl(wsUrl);
-            console.log('[LearnSession] currentWsUrl:', wsUrl);
 
             if (wsUrl) {
                 const connection = getConnectionByUrl(wsUrl);
                 if (connection) {
                     setCurrentConnectionId(connection.id);
                     setRetryAttempts(prev => ({ ...prev, wsConnection: 0 })); // 성공 시 재시도 카운터 리셋
-                    console.log('[LearnSession] currentConnectionId:', connection.id);
                 } else {
                     console.warn(`[LearnSession] No connection found for targetUrl: ${wsUrl}, 재시도 시작`);
                     retryWsConnection(wsUrl);
@@ -212,7 +212,7 @@ export const useClassifierClient = () => {
                                 }
 
 
-                                console.log('받은 분류 결과:', msg.data);
+                                // console.log('받은 분류 결과:', msg.data);
                                 if (feedback && msg.data.prediction === "None") {
                                     setCurrentResult(msg.data);
                                     break;
@@ -222,7 +222,6 @@ export const useClassifierClient = () => {
                                 let percent: number | undefined = undefined;
                                 if (prediction === target) {
                                     percent = confidence * 100;
-                                    console.log('percent:', percent);
                                 } else if (probabilities && target && probabilities[target] != null) {
                                     percent = probabilities[target] * 100;
                                 }
