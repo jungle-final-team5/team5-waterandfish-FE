@@ -43,7 +43,6 @@ import {
 } from 'lucide-react';
 import BadgeModal from '@/components/BadgeModal';
 import StreakModal from '@/components/StreakModal';
-import ProgressModal from '@/components/ProgressModal';
 import { useToast } from '@/hooks/use-toast';
 import { useBadgeSystem } from '@/hooks/useBadgeSystem';
 import { useStreakData } from '@/hooks/useStreakData';
@@ -340,6 +339,12 @@ const Dashboard: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [userLoading, setUserLoading] = useState(true);
 
+  // 챕터 단위 진도율 계산
+  const chapterCurrentIndex = user?.chapter_current_index ?? 0;
+  const totalChapters = allChapters.length;
+  const completedChapters = totalChapters > 0 ? chapterCurrentIndex : 0; // 진행중인 챕터는 제외
+  const progressRate = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+
   useEffect(() => {
     if (allChapters.length === 0) return;
 
@@ -365,8 +370,6 @@ const Dashboard: React.FC = () => {
       .catch(() => setUser(null))
       .finally(() => setUserLoading(false));
   }, [allChapters]);
-
-  const chapterCurrentIndex = user?.chapter_current_index ?? 0;
 
   // 지그재그 배치
   function zigzagChapters(chapters: any[], rowSize = 3) {
@@ -492,13 +495,13 @@ const Dashboard: React.FC = () => {
                       </div>
                       <Trophy className="text-2xl text-yellow-500" />
                     </div>
-                    <div className="w-full bg-green-50 border border-green-200 rounded-xl p-4 mb-6 cursor-pointer" onClick={() => { setIsProfileModalOpen(false); setIsProgressModalOpen(true); }}>
+                    <div className="w-full bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
                       <div className="flex items-center justify-between mb-2">
                         <div className="font-semibold text-gray-800">전체 진도율</div>
-                        <span className="text-sm font-medium text-green-600">{progressOverview?.overall_progress ?? 0}%</span>
+                        <span className="text-sm font-medium text-green-600">{progressRate.toFixed(1)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-500 h-2 rounded-full" style={{ width: `${progressOverview?.overall_progress ?? 0}%` }}></div>
+                        <div className="bg-green-500 h-2 rounded-full" style={{ width: `${progressRate}%` }}></div>
                       </div>
                     </div>
                     <Button className="w-full bg-indigo-500 text-white py-3 rounded-lg hover:bg-indigo-600 transition-colors font-semibold text-base" onClick={() => { setIsProfileModalOpen(false); navigate('/profile'); }}>
@@ -741,7 +744,6 @@ const Dashboard: React.FC = () => {
 
       <BadgeModal isOpen={isBadgeModalOpen} onClose={() => setIsBadgeModalOpen(false)} />
       <StreakModal isOpen={isStreakModalOpen} onClose={() => setIsStreakModalOpen(false)} />
-      <ProgressModal isOpen={isProgressModalOpen} onClose={() => setIsProgressModalOpen(false)} />
     </div>
   );
 };
