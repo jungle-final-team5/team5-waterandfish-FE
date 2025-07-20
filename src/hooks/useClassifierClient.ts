@@ -46,7 +46,7 @@ export const useClassifierClient = () => {
     // 초기화 로직
     useEffect(() => {
         // location.state에서 lesson_mapper가 있으면 초기화
-        if (location.state?.lesson_mapper && 
+        if (location.state?.lesson_mapper &&
             Object.keys(location.state.lesson_mapper).length > 0 &&
             typeof location.state.lesson_mapper === 'object') {
             setLessonMapper(location.state.lesson_mapper);
@@ -74,7 +74,7 @@ export const useClassifierClient = () => {
 
         retryTimeoutRef.current = setTimeout(() => {
             // 이전 페이지로 돌아가서 다시 데이터 받아오기
-            if (location.state?.lesson_mapper && 
+            if (location.state?.lesson_mapper &&
                 Object.keys(location.state.lesson_mapper).length > 0 &&
                 typeof location.state.lesson_mapper === 'object') {
                 setLessonMapper(location.state.lesson_mapper);
@@ -223,11 +223,15 @@ export const useClassifierClient = () => {
                                 let percent: number | undefined = undefined;
                                 if (prediction === target) {
                                     percent = confidence * 100;
-                                } else if (probabilities && target && probabilities[target] != null) {
+                                }
+                                else if (prediction != "None" && prediction != target) {
+                                    setDisplayConfidence("잘못된 동작입니다");
+                                }
+                                else if (probabilities && target && probabilities[target] != null) {
                                     percent = probabilities[target] * 100;
                                 }
                                 else {
-                                    setDisplayConfidence("[연결 대기 중]");
+                                    setDisplayConfidence("동작을 기다리는 중...");
                                 }
                                 if (percent != null) {
                                     setDisplayConfidence(`${percent.toFixed(1)}%`);
@@ -299,7 +303,7 @@ export const useClassifierClient = () => {
         // 재시도 함수들
         retryLessonMapper,
         retryWsConnection,
-        
+
         // WebSocket 관련
         connectionStatus,
         wsList,
