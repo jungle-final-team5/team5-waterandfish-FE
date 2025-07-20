@@ -556,7 +556,7 @@ export const useMediaPipeHolistic = (
   }, []);
 
   const inspect_sequence = (sequence: any) => {
-    console.log('🔍 시퀀스 검사 시작:', sequence.data.sequence?.length || 0, '프레임');
+    // console.log('🔍 시퀀스 검사 시작:', sequence.data.sequence?.length || 0, '프레임');
 
     // 시퀀스 데이터 추출
     const landmarksSequence = sequence.data.sequence as LandmarksData[];
@@ -743,7 +743,7 @@ export const useMediaPipeHolistic = (
     const hasFastMovement = checkAcceleration();
 
     if (!hasFastMovement) {
-      console.log('✅ 동작 속도 정상');
+      // console.log('✅ 동작 속도 정상');
     }
     return hasFastMovement; // 실제 감지 결과 반환
   }

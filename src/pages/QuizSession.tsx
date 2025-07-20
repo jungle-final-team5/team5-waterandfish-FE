@@ -40,6 +40,8 @@ const QuizSession = () => {
     isRetrying,
     isConnected,
     currentConnectionId,
+    bufferingPauseTime,
+    setBufferingPauseTime,
     currentWsUrl,
     lessonMapper,
     currentSignId,
@@ -119,7 +121,7 @@ const QuizSession = () => {
         return newBuffer;
       });
     } else {
-      console.log(`⚠️ 랜드마크 버퍼링 건너뜀 - 녹화: ${isRecording}, 연결: ${isConnected}`);
+      // console.log(`⚠️ 랜드마크 버퍼링 건너뜀 - 녹화: ${isRecording}, 연결: ${isConnected}`);
     }
   }, [isRecording, isConnected]);
 
@@ -156,7 +158,7 @@ const QuizSession = () => {
 
       // 2초마다 버퍼 전송
       bufferIntervalRef.current = setInterval(() => {
-        setLandmarksBuffer(prevBuffer => {
+        setLandmarksBuffer((prevBuffer) => {
           if (prevBuffer.length > 0) {
             // 버퍼의 모든 랜드마크를 시퀀스로 전송
             const landmarksSequence = {
@@ -164,25 +166,40 @@ const QuizSession = () => {
               data: {
                 sequence: prevBuffer,
                 timestamp: Date.now(),
-                frame_count: prevBuffer.length
-              }
+                frame_count: prevBuffer.length,
+              },
             };
             const is_fast = inspect_sequence(landmarksSequence);
             if (!is_fast) {
-              console.log('✅ 동작 속도 정상');
-              if (isBufferingPaused) {
-                setIsBufferingPaused(false);
+              // console.log('✅ 동작 속도 정상');
+              if (isBufferingPaused && bufferingPauseTime > 0) {
+                console.log('bufferingPauseTime:', bufferingPauseTime);
+                setBufferingPauseTime(prev => {
+                  const newTime = prev - 1000;
+                  console.log('newTime:', newTime);
+                  if (newTime <= 0) {
+                    setIsBufferingPaused(false);
+                    console.log('bufferingPauseTime 0 됨');
+                    return 0;
+                  }
+                  else {
+                    return newTime;
+                  }
+                });
               }
-              sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
-            }
-            else {
+              console.log("sendMessage 호출");
+              if (!isBufferingPaused) {
+                sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
+              }
+            } else {
               console.log('❌ 동작 속도 빠름. 시퀸스 전송 건너뜀');
-              setDisplayConfidence("천천히 동작해주세요");
+              setDisplayConfidence('천천히 동작해주세요');
               setIsBufferingPaused(true);
+              setBufferingPauseTime(3000);
               setLandmarksBuffer([]);
             }
-            setTransmissionCount(prev => prev + prevBuffer.length);
-            console.log(`📤 랜드마크 시퀀스 전송됨 (${prevBuffer.length}개 프레임)`);
+            setTransmissionCount((prev) => prev + prevBuffer.length);
+            // console.log(`📤 랜드마크 시퀀스 전송됨 (${prevBuffer.length}개 프레임)`);
 
             // 버퍼 비우기
             return [];
@@ -191,7 +208,7 @@ const QuizSession = () => {
         });
       }, BUFFER_DURATION);
 
-      console.log('🔄 랜드마크 버퍼링 시작 (1초 간격)');
+      // console.log('🔄 랜드마크 버퍼링 시작 (1초 간격)');
     } else {
       // 녹화 중이 아니거나 연결이 끊어진 경우 타이머 정리
       if (bufferIntervalRef.current) {
@@ -210,33 +227,46 @@ const QuizSession = () => {
         bufferIntervalRef.current = null;
       }
     };
-  }, [isRecording, isConnected, currentConnectionId, sendMessage, isBufferingPaused, currentResult]);
+  }, [
+    isRecording,
+    isConnected,
+    currentConnectionId,
+    sendMessage,
+    isBufferingPaused,
+    currentResult,
+    setDisplayConfidence,
+    setIsBufferingPaused,
+  ]);
 
   useEffect(() => {
     setIsRecording(true);
     return () => {
       disconnectWebSockets();
-      // 1. 레슨 상태 업데이트
-      API.post(`/progress/chapters/${chapterId}/lessons`, {
-        lesson_ids: lessons.map((l) => l.id),
-        status: 'study',
-      })
-        .then(() => {
-          // 2. 챕터 완료(진도 증가) API 호출
-          return API.post('/study/sessions/complete', { chapter_id: chapterId });
-        })
-        .then(() => {
-          // 3. 완료 페이지로 이동
-          navigate(`/complete/chapter/${chapterId}/${1}`);
-        });
-      // eslint-disable-next-line
-      // 버퍼링 타이머 정리
-      if (bufferIntervalRef.current) {
-        clearInterval(bufferIntervalRef.current);
-        bufferIntervalRef.current = null;
-      }
+
     }
   }, []);
+
+  if (sessionComplete) {
+    // 1. 레슨 상태 업데이트
+    API.post(`/progress/chapters/${chapterId}/lessons`, {
+      lesson_ids: lessons.map((l) => l.id),
+      status: 'study',
+    })
+      .then(() => {
+        // 2. 챕터 완료(진도 증가) API 호출
+        return API.post('/study/sessions/complete', { chapter_id: chapterId });
+      })
+      .then(() => {
+        // 3. 완료 페이지로 이동
+        navigate(`/complete/chapter/${chapterId}/${1}`);
+      });
+    // eslint-disable-next-line
+    // 버퍼링 타이머 정리
+    if (bufferIntervalRef.current) {
+      clearInterval(bufferIntervalRef.current);
+      bufferIntervalRef.current = null;
+    }
+  }
 
   //===============================================
 
@@ -245,7 +275,7 @@ const QuizSession = () => {
     if (currentConnectionId &&
       currentConnectionId !== prevConnectionIdRef.current &&
       prevConnectionIdRef.current !== '') {
-      console.log('[QuizSession] connectionId 변경 감지:', prevConnectionIdRef.current, '->', currentConnectionId);
+      // console.log('[QuizSession] connectionId 변경 감지:', prevConnectionIdRef.current, '->', currentConnectionId);
     }
     if (currentConnectionId) {
       prevConnectionIdRef.current = currentConnectionId;
@@ -265,8 +295,8 @@ const QuizSession = () => {
 
   // handleNextSign 함수 수정
   const handleNextSign = useCallback(async (latestResults = quizResults) => {
-    console.log('🔄 다음 수어로 이동:', currentSignIndex + 1);
-    console.log('현재 퀴즈 결과:', latestResults);
+    // console.log('🔄 다음 수어로 이동:', currentSignIndex + 1);
+    // console.log('현재 퀴즈 결과:', latestResults);
 
     // 타이머 상태 초기화
     setTimerActive(false);
@@ -291,11 +321,10 @@ const QuizSession = () => {
           correct: result.correct,
           timeSpent: result.timeSpent
         }));
-        console.log(results);
         await API.post(`/quiz/chapter/${chapterId}/submit`, {
           results: results
         });
-        console.log('퀴즈 결과 제출 완료');
+        // console.log('퀴즈 결과 제출 완료');
       } catch (error) {
         console.error('퀴즈 결과 제출 실패:', error);
       }
@@ -304,7 +333,7 @@ const QuizSession = () => {
 
   // FeedbackDisplay 완료 콜백 함수
   const handleFeedbackComplete = () => {
-    console.log('🎉 FeedbackDisplay 완료, 다음 수어로 이동');
+    // console.log('🎉 FeedbackDisplay 완료, 다음 수어로 이동');
     handleNextSign();
   };
 
@@ -312,7 +341,7 @@ const QuizSession = () => {
   useEffect(() => {
     const initialize = async () => {
       if (isInitialized) {
-        console.log('🚀 자동 초기화 시작...');
+        // console.log('🚀 자동 초기화 시작...');
         await initializeSession();
       }
     };
@@ -330,18 +359,18 @@ const QuizSession = () => {
   // 현재 수어에 대한 ws url 출력
   useEffect(() => {
     if (currentSignId) {
-      console.log('[QuizSession] currentSignId:', currentSignId);
+      // console.log('[QuizSession] currentSignId:', currentSignId);
       const wsUrl = lessonMapper[currentSignId] || '';
-      console.log('[QuizSession] currentWsUrl:', wsUrl);
+      // console.log('[QuizSession] currentWsUrl:', wsUrl);
 
       if (wsUrl) {
         // WebSocket 연결 시도
-        console.log('[QuizSession] WebSocket 연결 시도:', wsUrl);
+        // console.log('[QuizSession] WebSocket 연결 시도:', wsUrl);
 
         // 연결 상태 확인
         const connection = getConnectionByUrl(wsUrl);
         if (connection) {
-          console.log('[QuizSession] currentConnectionId:', connection.id);
+          // console.log('[QuizSession] currentConnectionId:', connection.id);
         } else {
           console.warn(`[QuizSession] No connection found for targetUrl: ${wsUrl}, 재시도 시작`);
           retryWsConnection(wsUrl);
@@ -367,7 +396,7 @@ const QuizSession = () => {
       }
 
       if (percent >= 80.0) {
-        console.log("✅ 정답! 시간 내에 성공");
+        // console.log("✅ 정답! 시간 내에 성공");
         setTimerActive(false);
         setFeedback("correct");
 
@@ -386,7 +415,7 @@ const QuizSession = () => {
 
             // 상태 업데이트 후 3초 뒤에 다음 문제로 이동
             setTimeout(() => {
-              console.log("업데이트된 퀴즈 결과 (정답):", updatedResults);
+              // console.log("업데이트된 퀴즈 결과 (정답):", updatedResults);
               handleNextSign(updatedResults); // 업데이트된 결과를 인자로 전달
             }, 3000);
 
@@ -404,21 +433,21 @@ const QuizSession = () => {
         try {
           const chapData = await findHierarchyByChapterId(chapterId);
           const categoryData = await findCategoryById(chapData.category_id);
-          console.log(categoryData);
-          console.log(chapData.lessons);
+          // console.log(categoryData);
+          // console.log(chapData.lessons);
           setLessons(chapData.lessons);
 
           // lessonMapper도 함께 로드
           if (chapData.lesson_mapper) {
             setLessonMapper(chapData.lesson_mapper);
-            console.log('[QuizSession] lessonMapper 로드됨:', chapData.lesson_mapper);
+            // console.log('[QuizSession] lessonMapper 로드됨:', chapData.lesson_mapper);
           } else {
             // lessonMapper가 없으면 별도로 로드
             try {
               const mapperResponse = await API.get(`/chapters/${chapterId}/lesson_mapper`);
               if (mapperResponse.data && Object.keys(mapperResponse.data).length > 0) {
                 setLessonMapper(mapperResponse.data as { [key: string]: string });
-                console.log('[QuizSession] lessonMapper 별도 로드 성공:', mapperResponse.data);
+                // console.log('[QuizSession] lessonMapper 별도 로드 성공:', mapperResponse.data);
               }
             } catch (error) {
               console.error('[QuizSession] lessonMapper 로드 실패:', error);
@@ -449,7 +478,7 @@ const QuizSession = () => {
 
   // 시간 초과 시 호출
   const handleTimeUp = useCallback(() => {
-    console.log('⏰ 시간 초과! 오답 처리');
+    // console.log('⏰ 시간 초과! 오답 처리');
     setIsRecording(false);
     setTimerActive(false);
     setFeedback('incorrect');
@@ -468,22 +497,22 @@ const QuizSession = () => {
 
         // 상태 업데이트 후 3초 뒤에 다음 문제로 이동
         setTimeout(() => {
-          console.log("업데이트된 퀴즈 결과:", updatedResults);
+          // console.log("업데이트된 퀴즈 결과:", updatedResults);
           handleNextSign(updatedResults); // 업데이트된 결과를 인자로 전달
         }, 3000);
 
         return updatedResults;
       });
 
-      console.log(currentSign.id);
-      console.log("틀린거 저장 완료하다");
+      // console.log(currentSign.id);
+      // console.log("틀린거 저장 완료하다");
     }
   }, [currentSign]);
 
   // 퀴즈 시작 함수
   const handleStartQuiz = () => {
     if (currentSign) {
-      console.log('🎯 퀴즈 시작:', currentSign.word);
+      // console.log('🎯 퀴즈 시작:', currentSign.word);
       setQuizStarted(true);
       setIsQuizReady(true);
       setIsRecording(true);
@@ -492,7 +521,7 @@ const QuizSession = () => {
       // 타이머 시작을 약간 지연시켜 상태 업데이트가 완료된 후 시작
       setTimeout(() => {
         setTimerActive(true);
-        console.log('⏰ 타이머 활성화됨');
+        // console.log('⏰ 타이머 활성화됨');
       }, 100);
     }
   };
