@@ -295,7 +295,7 @@ const getCompatibleState = () => {
 const sendMessage = (message: string | ArrayBuffer | Blob, connectionId?: string) => {
     if (connectionId) {
         // 특정 연결로 메시지 전송
-        console.log('[sendMessage] connectionId', connectionId);
+        // console.log('[sendMessage] connectionId', connectionId);
         const connection = getConnection(connectionId);
         if (connection?.ws?.readyState === WebSocket.OPEN) {
             connection.ws.send(message);

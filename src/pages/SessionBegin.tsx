@@ -163,33 +163,33 @@ const SessionBegin = () => {
                   )}
                   {modeNum === 2 && (
                     <>
-                      <li className="flex items-start">
+                      <li className="flex items-start text-lg">
 
                         <span className="w-2 h-2 bg-indigo-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                         시간 제한이 있으니 미리 동작을 연습해두세요
                       </li>
-                      <li className="flex items-start">
+                      <li className="flex items-start text-lg">
                         <span className="w-2 h-2 bg-indigo-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                         정확한 동작이 중요합니다. 천천히 정확하게 해주세요
                       </li>
-                      <li className="flex items-start">
+                      <li className="flex items-start text-lg">
                         <span className="w-2 h-2 bg-indigo-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
 
-                        틀린 문제는 자동으로 복습 목록에 추가됩니다
+                        수어 동작은 무릎에서 시작하고 무릎에서 끝나야 합니다.
                       </li>
                     </>
                   )}
                   {modeNum === 3 && (
                     <>
-                      <li className="flex items-start">
+                      <li className="flex items-start text-lg">
                         <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                         ULTIMATE SIGN LANGUAGE PLAYER가 되기 위해
                       </li>
-                      <li className="flex items-start">
+                      <li className="flex items-start text-lg">
                         <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                         복습을 하다니 정말 의지가 뚜렷한 모습이 있어 보기 좋습니다
                       </li>
-                      <li className="flex items-start">
+                      <li className="flex items-start text-lg">
                         <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
 
                         죄송해요 말밖에 할게 없네요 해브어 굿 데이

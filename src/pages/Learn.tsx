@@ -160,11 +160,11 @@ const Learn = () => {
             };
             const is_fast = inspect_sequence(landmarksSequence);
             if (!is_fast) {
-              console.log('✅ 동작 속도 정상');
+              // console.log('✅ 동작 속도 정상');
               if (isBufferingPaused) {
                 setIsBufferingPaused(false);
               }
-              console.log('🔄 랜드마크 시퀀스 전송됨 (1초 간격)');
+              // console.log('🔄 랜드마크 시퀀스 전송됨 (1초 간격)');
               sendMessage(JSON.stringify(landmarksSequence), currentConnectionId);
             }
             else {
@@ -174,7 +174,7 @@ const Learn = () => {
               setLandmarksBuffer([]);
             }
             setTransmissionCount(prev => prev + prevBuffer.length);
-            console.log(`📤 랜드마크 시퀀스 전송됨 (${prevBuffer.length}개 프레임)`);
+            // console.log(`📤 랜드마크 시퀀스 전송됨 (${prevBuffer.length}개 프레임)`);
 
             // 버퍼 비우기
             return [];
@@ -183,7 +183,7 @@ const Learn = () => {
         });
       }, BUFFER_DURATION);
 
-      console.log('🔄 랜드마크 버퍼링 시작 (1초 간격)');
+      // console.log('🔄 랜드마크 버퍼링 시작 (1초 간격)');
     } else {
       // 녹화 중이 아니거나 연결이 끊어진 경우 타이머 정리
       if (bufferIntervalRef.current) {
