@@ -82,7 +82,8 @@ const SessionBegin = () => {
       </header >
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 h-full">
+      <main className="container mx-auto px-2 py-2 flex-1 overflow-auto">
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch h-full">
 
           {/* 가이드 정보 (왼쪽) */}
@@ -136,14 +137,15 @@ const SessionBegin = () => {
               </CardContent>
             </Card>
             {/* 학습 팁 */}
-            <Card className="border border-gray-300 rounded-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <span className="mr-2 text-2xl" role="img" aria-label="sparkles">✨</span>
-                  학습 팁
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+<Card className="border border-gray-300 rounded-xl mt-2">
+  <CardHeader className="py-2">
+    <CardTitle className="flex items-center">
+      <span className="mr-2 text-2xl" role="img" aria-label="sparkles">✨</span>
+      학습 팁
+    </CardTitle>
+  </CardHeader>
+  <CardContent className="pt-0">
+
                 <ul className="space-y-2 text-sm text-gray-700">
                   {modeNum === 1 && (
                     <>
@@ -221,13 +223,13 @@ const SessionBegin = () => {
           {/* 오른쪽: 캠 프리뷰 + 세션 시작 버튼 */}
           <div className="flex flex-col items-center space-y-6 h-full justify-end">
             <div className="border border-gray-300 rounded-xl overflow-hidden">
-              <WebcamPreview width={704} height={528} />
+              <WebcamPreview width={680} height={510} />
             </div>
             <Button
               disabled={connectedCount !== totalCount}
               onClick={startContents}
               size="lg"
-              className="w-[704px] h-32 mt-2 border border-gray-300 rounded-xl flex items-center justify-center text-2xl font-bold bg-indigo-900 hover:bg-black text-white transition-colors"
+              className="w-[680px] h-32 mt-2 border border-gray-300 rounded-xl flex items-center justify-center text-2xl font-bold bg-indigo-900 hover:bg-black text-white transition-colors"
             >
               세션 시작
               <ArrowRight className="h-4 w-4 ml-2" />
