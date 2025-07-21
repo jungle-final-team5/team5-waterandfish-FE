@@ -25,6 +25,7 @@ import { update } from 'lodash';
 import { useClassifierClient } from '@/hooks/useClassifierClient';
 import { useAnimation } from '@/hooks/useAnimation';
 import { Lesson } from '@/types/learning';
+import { ConsoleSqlOutlined } from '@ant-design/icons';
 
 const CORRECT_TARGET = 3;
 
@@ -145,6 +146,9 @@ const Learn = () => {
         clearInterval(bufferIntervalRef.current);
       }
 
+      console.log("currnesRsutr");
+      console.log(currentResult?.prediction);
+
       // 1초마다 버퍼 전송
       bufferIntervalRef.current = setInterval(() => {
         setLandmarksBuffer(prevBuffer => {
@@ -245,16 +249,6 @@ const Learn = () => {
       setIsRecording(true);
     }
   }, [feedback, setFeedback]);
-
-  // 정답/오답 모달이 뜨면 3초(정답) 또는 2초(오답) 뒤 자동으로 닫힘
-  useEffect(() => {
-    if (feedback === 'correct' || feedback === 'incorrect') {
-      const timer = setTimeout(() => {
-        handleFeedbackComplete();
-      }, feedback === 'correct' ? 3000 : 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [feedback, handleFeedbackComplete]);
 
   // 정답 3회 시 완료 처리
   useEffect(() => {
@@ -416,16 +410,16 @@ const Learn = () => {
           </div>
 
         </div>
-        {/* 피드백 표시 */}
-        {feedback && (
-          <div className="mt-8">
-            <FeedbackDisplay
-              feedback={feedback}
-              prediction={currentResult?.prediction}
-              onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
-            />
-          </div>
-        )}
+      {/* 피드백 표시 */}
+      {feedback && (
+        <div className="px-[2vw] pb-[1.5vw]">
+          <FeedbackDisplay
+            feedback={feedback}
+            prediction={currentResult?.prediction}
+            onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
+          />
+        </div>
+      )}
       </div>
     </div>
   );
