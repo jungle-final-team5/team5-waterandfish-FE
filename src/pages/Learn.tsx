@@ -410,16 +410,16 @@ const Learn = () => {
           </div>
 
         </div>
-        {/* 피드백 표시 */}
-        {feedback && (
-          <div className="mt-8">
-            <FeedbackDisplay
-              feedback={feedback}
-              prediction={currentResult?.prediction}
-              onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
-            />
-          </div>
-        )}
+      {/* 피드백 표시 */}
+      {feedback && (
+        <div className="px-[2vw] pb-[1.5vw]">
+          <FeedbackDisplay
+            feedback={feedback}
+            prediction={currentResult?.prediction}
+            onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
+          />
+        </div>
+      )}
       </div>
     </div>
   );
