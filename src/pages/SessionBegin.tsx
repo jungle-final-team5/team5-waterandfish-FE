@@ -86,7 +86,7 @@ const SessionBegin = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
 
           {/* 가이드 정보 (왼쪽) */}
-          <div className="flex flex-col space-y-4 overflow-y-auto pr-2 border-2 border-red-500">
+          <div className="flex flex-col space-y-4 overflow-y-auto pr-2">
 
             {/* 학습 전 준비사항 */}
             <Card className="border border-gray-300 rounded-xl flex-shrink-0">
@@ -194,7 +194,7 @@ const SessionBegin = () => {
             </Card>
 
             {/* 수어 분류 서버 연결 상태 안내 - 왼쪽 컬럼 마지막 */}
-            <Card className="border border-gray-300 rounded-xl flex-shrink-0 border-2 border-red-500">
+            <Card className="border border-gray-300 rounded-xl flex-shrink-0">
               <CardContent className="py-6 px-4">
                 <div className="text-center space-y-4">
                   {connectedCount !== totalCount && (
@@ -223,7 +223,7 @@ const SessionBegin = () => {
           </div>
 
           {/* 오른쪽: 캠 프리뷰 + 세션 시작 버튼 */}
-          <div className="flex flex-col items-start h-full justify-between border-2 border-red-500 min-h-0">
+          <div className="flex flex-col items-start space-y-4">
             <div className="border border-gray-300 rounded-xl overflow-hidden w-full max-w-[704px]">
               <WebcamPreview width={704} height={528} />
             </div>
