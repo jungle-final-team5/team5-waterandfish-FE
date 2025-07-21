@@ -11,7 +11,7 @@ import React, { useState, useRef, useEffect, useCallback, startTransition } from
 
 import API from '@/components/AxiosInstance';
 import useWebsocket, { getConnectionByUrl, disconnectWebSockets } from '@/hooks/useWebsocket';
-import VideoInput from '@/components/PlayerWindow';
+import PlayerWindow from '@/components/PlayerWindow';
 import SessionHeader from '@/components/SessionHeader';
 import LearningDisplay from '@/components/LearningDisplay';
 import FeedbackDisplay from '@/components/FeedbackDisplay';
@@ -277,8 +277,8 @@ const LearnSession = () => {
     };
   }, [isInitialized]);
   useEffect(() => {
-  // currentSignIndex(즉, currentSign)이 바뀔 때마다 버퍼 비우기
-  setLandmarksBuffer([]);
+    // currentSignIndex(즉, currentSign)이 바뀔 때마다 버퍼 비우기
+    setLandmarksBuffer([]);
   }, [currentSignIndex]);
   // 챕터 아이디를 통해 챕터 첫 준비
   useEffect(() => {
@@ -355,7 +355,7 @@ const LearnSession = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <SessionHeader
         currentMode={"학습"}
         chapterId={chapterId}
@@ -366,57 +366,56 @@ const LearnSession = () => {
         feedback={feedback}
       />
 
-      <div className="grid lg:grid-cols-2 gap-12 w-full max-w-full md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4">
+      <div className="grid lg:grid-cols-2 gap-[2vw] w-full flex-1 px-[2vw] overflow-hidden">
 
-        <div className="mt-4 p-3 bg-gray-100 rounded-md">
-
-          <div className="space-y-4 relative">
-            {videoSrc ? (
-              <>
-                <video
-                  src={videoSrc}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-contain"
-                  onClick={togglePlaybackSpeed}
+        <div className="h-full p-[1.5vw] bg-gray-100 rounded-md flex flex-col">
+          <div className="h-full bg-gray-100 rounded-md flex flex-col justify-between">
+            <div className="flex-1">
+              {videoSrc ? (
+                <>
+                  <video
+                    src={videoSrc}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-contain"
+                    onClick={togglePlaybackSpeed}
+                  />
+                  {isSlowMotion && (
+                    <div className="absolute top-[0.5vw] right-[0.5vw] bg-black bg-opacity-60 text-white px-[0.5vw] py-[0.25vw] rounded-md text-[1.2vw] font-medium">
+                      0.5x
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center bg-gray-200 rounded h-full w-full">
+                  <p>비디오 로딩 중...</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-center mx-auto w-full max-w-[90%]">
+              {lessons && (
+                <SlideScale
+                  words={lessons?.map((lesson: any) => lesson.word)}
+                  currentIndex={currentSignIndex}
+                  feedbackState={feedback} // 'default', 'correct', 'incorrect' 중 하나
+                  onManualChange={handleNextSign} // Add this line
                 />
-                {isSlowMotion && (
-                  <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-md text-xl font-medium">
-                    0.5x
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center justify-center bg-gray-200 rounded h-full w-full">
-                <p>비디오 로딩 중...</p>
-              </div>
-            )}
-          </div>
 
-          <div className="mt-4 flex-1 flex justify-center items-center mx-auto max-w-4xl">
-            {lessons && (
-              <SlideScale
-                words={lessons?.map((lesson: any) => lesson.word)}
-                currentIndex={currentSignIndex}
-                feedbackState={feedback} // 'default', 'correct', 'incorrect' 중 하나
-                onManualChange={handleNextSign} // Add this line
-              />
-
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-gray-100 rounded-md">
+        <div className="h-full p-[1.5vw] bg-gray-100 rounded-md flex flex-col">
           {/* 비디오 입력 영역 */}
-          <div className="space-y-4">
-            <VideoInput
-              width={640}
-              height={480}
+          <div className="space-y-[1.5vw] flex-1">
+            <PlayerWindow
               autoStart={true}
               showControls={true}
-              className="h-full"
+              className="h-full w-full"
               currentSign={currentLessonSign}
               currentResult={displayConfidence}
             />
@@ -433,18 +432,18 @@ const LearnSession = () => {
             </div>
           </div>
         </div>
-            
-        {/* 피드백 표시 */}
-        {feedback && (
-          <div className="mt-8">
-            <FeedbackDisplay
-              feedback={feedback}
-              prediction={currentResult?.prediction}
-              onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
-            />
-          </div>
-        )}
       </div>
+
+      {/* 피드백 표시 */}
+      {feedback && (
+        <div className="px-[2vw] pb-[1.5vw]">
+          <FeedbackDisplay
+            feedback={feedback}
+            prediction={currentResult?.prediction}
+            onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
+          />
+        </div>
+      )}
     </div>
   );
 };
