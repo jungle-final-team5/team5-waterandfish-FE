@@ -731,7 +731,7 @@ const Dashboard: React.FC = () => {
                           <span className={`text-4xl font-extrabold ml-3 ${cardText}`}>{chapter.title}</span>
                         </div>
                         {status === 'current' && (
-                          <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-sm font-medium">진행 중</span>
+                          <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-sm font-medium">진행</span>
                         )}
                       </div>
                       {/* 챕터명과 레슨 카드 사이 간격 */}
