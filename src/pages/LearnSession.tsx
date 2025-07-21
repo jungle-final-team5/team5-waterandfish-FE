@@ -433,7 +433,7 @@ const LearnSession = () => {
             </div>
           </div>
         </div>
-
+            
         {/* 피드백 표시 */}
         {feedback && (
           <div className="mt-8">
