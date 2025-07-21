@@ -542,7 +542,7 @@ const Dashboard: React.FC = () => {
               setSearchQuery(e.target.value);
               handleSearch(e.target.value);
             }}
-            className="w-full pl-12 pr-4 py-4 text-lg border-2 !border-gray-200 focus:!border-transparent focus:ring-2 focus:ring-blue-400 rounded-xl h-14 transition-all"
+            className="w-full pl-12 pr-4 py-4 text-xl border-2 border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 rounded-xl h-16 transition-all"
             disabled={isEnteringLesson}
           />
         </div>
@@ -599,6 +599,28 @@ const Dashboard: React.FC = () => {
                 const animationDelay = `${500 + (animationIndex >= 0 ? animationIndex : 0) * 200}ms`;
                                 const isFirstAnimated = chaptersToAnimate[0] === chapter.id;
 
+                // 카드 색상 결정 (퀴즈: course_type === 2)
+                let cardBg = '';
+                let cardBorder = '';
+                let cardText = '';
+                if (status === 'locked') {
+                  cardBg = 'bg-gray-50';
+                  cardBorder = 'border-gray-100';
+                  cardText = 'text-gray-400';
+                } else if (chapter.course_type === 2) {
+                  cardBg = 'bg-yellow-50';
+                  cardBorder = 'border-yellow-200';
+                  cardText = 'text-yellow-700';
+                } else if (status === 'completed') {
+                  cardBg = 'bg-white';
+                  cardBorder = 'border-emerald-200';
+                  cardText = 'text-emerald-700';
+                } else {
+                  cardBg = 'bg-white';
+                  cardBorder = 'border-indigo-100';
+                  cardText = 'text-indigo-700';
+                }
+
                 return (
                   <div
                     ref={isCurrentChapter ? currentChapterRef : isFirstAnimated ? firstAnimatedChapterRef : null}
@@ -648,12 +670,16 @@ const Dashboard: React.FC = () => {
                     )}
                     {/* Chapter Card */}
                     <div
-                      className={`h-full p-8 rounded-3xl shadow-lg border-2 transition-all duration-500 relative ${status === 'completed'
-                        ? 'bg-white border-emerald-200 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:rotate-1'
-                        : status === 'locked'
-                          ? 'bg-gray-50 border-gray-100'
-                          : 'bg-white border-indigo-100 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:bg-indigo-50 group-hover:border-indigo-300'
-                        } ${isCurrentChapter && status !== 'locked' ? 'border-indigo-400 pulse-border-3' : ''}`}
+                      className={`h-full p-8 rounded-3xl shadow-lg border-2 transition-all duration-500 relative group overflow-hidden
+                        ${chapter.course_type === 2
+                          ? 'bg-yellow-50 border-yellow-400 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:bg-yellow-100 group-hover:border-yellow-500'
+                          : status === 'completed'
+                            ? 'bg-white border-emerald-400 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:rotate-1'
+                            : status === 'locked'
+                              ? 'bg-gray-50 border-gray-100'
+                              : 'bg-white border-indigo-100 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:bg-indigo-50 group-hover:border-indigo-300'
+                        }
+                        ${isCurrentChapter && status !== 'locked' ? 'border-indigo-400 pulse-border-3' : ''}`}
                       onClick={async () => {
                         if (status === 'locked' || loadingChapterId) return;
                         if (chapter.title == '자음') {
@@ -677,50 +703,55 @@ const Dashboard: React.FC = () => {
                         </div>
                       )}
                       <div className="flex justify-between items-start mb-6">
-                        <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${status === 'completed'
-                            ? 'bg-emerald-400 text-white'
-                            : status === 'current'
-                              ? 'bg-white border-4 border-indigo-400 text-indigo-500'
-                              : 'bg-gray-300 text-gray-500'
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                              chapter.course_type === 2
+                                ? 'bg-yellow-400 text-white border-4 border-yellow-400'
+                                : status === 'completed'
+                                  ? 'bg-emerald-400 text-white'
+                                  : status === 'current'
+                                    ? 'bg-white border-4 border-indigo-400 text-indigo-500'
+                                    : 'bg-gray-300 text-gray-500'
                             }`}
-                        >
-                          {status === 'completed' ? (
-                            <CheckCircleOutlined className="text-xl" />
-                          ) : status === 'locked' ? (
-                            <LockOutlined className="text-lg" />
-                          ) : (
-                            globalIdx + 1
-                          )}
+                          >
+                            {status === 'completed' ? (
+                              chapter.course_type === 2 ? (
+                                <CheckCircleOutlined className="text-xl text-white" />
+                              ) : (
+                                <CheckCircleOutlined className="text-xl" />
+                              )
+                            ) : status === 'locked' ? (
+                              <LockOutlined className="text-lg" />
+                            ) : (
+                              globalIdx + 1
+                            )}
+                          </div>
+                          {/* 챕터명을 인덱스(번호) 옆에 크게 표시 */}
+                          <span className={`text-4xl font-extrabold ml-3 ${cardText}`}>{chapter.title}</span>
                         </div>
                         {status === 'current' && (
                           <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-sm font-medium">진행 중</span>
                         )}
                       </div>
-                      <div>
-                        <h3 className={`text-xl font-bold mb-6 ${status === 'locked' ? 'text-gray-400' : 'text-gray-800'}`}>
-                          {chapter.course_type === 1 ? (
-                            <span className="text-3xl text-gray-500 mr-2">📖</span>
-                          ) : (
-                            <span className="text-3xl text-gray-500 mr-2">🧐</span>
-                          )}
-                          {chapter.title}
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          {(chapter.lessons || []).slice(0, 4).map((lesson, lidx) => (
-                            <div
-                              key={lidx}
-                              className={`rounded-xl p-4 flex items-center justify-center transition-colors duration-300 ${
-                                status === 'completed'
-                              ? 'bg-emerald-50 group-hover:bg-emerald-100'
-                                  : 'bg-indigo-50 group-hover:bg-indigo-100'
-                              }`}
-                            >
-                              <span className={`text-sm font-medium ${status === 'completed' ? 'text-emerald-700' : 'text-indigo-700'}`}>
+                      {/* 챕터명과 레슨 카드 사이 간격 */}
+                      <div className="mt-6 mb-10">
+                        <div className="relative w-full flex items-center justify-center" style={{ minHeight: 220 }}>
+                          <div className="grid grid-cols-2 grid-rows-2 w-[90%] max-w-[320px] mx-auto h-[180px] relative">
+                            {(chapter.lessons || []).slice(0, 4).map((lesson, idx) => (
+                              <div
+                                key={idx}
+                                className={`flex items-center justify-center text-4xl font-bold text-center w-full ${cardText}`}
+                                style={{ minHeight: 80 }}
+                              >
                                 {lesson.word}
-                              </span>
-                            </div>
-                          ))}
+                              </div>
+                            ))}
+                            {/* 세로 점선 (중앙) */}
+                            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300" style={{ transform: 'translateX(-1px)' }} />
+                            {/* 가로 점선 (중앙) */}
+                            <div className="absolute top-1/2 left-0 right-0 h-0.5 border-t-2 border-dashed border-gray-300" style={{ transform: 'translateY(-1px)' }} />
+                          </div>
                         </div>
                       </div>
                       {status === 'locked' && (
