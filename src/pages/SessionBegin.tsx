@@ -179,23 +179,6 @@ const SessionBegin = () => {
                       </li>
                     </>
                   )}
-                  {modeNum === 3 && (
-                    <>
-                      <li className="flex items-start text-lg">
-                        <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        ULTIMATE SIGN LANGUAGE PLAYER가 되기 위해
-                      </li>
-                      <li className="flex items-start text-lg">
-                        <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        복습을 하다니 정말 의지가 뚜렷한 모습이 있어 보기 좋습니다
-                      </li>
-                      <li className="flex items-start text-lg">
-                        <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-
-                        죄송해요 말밖에 할게 없네요 해브어 굿 데이
-                      </li>
-                    </>
-                  )}
 
 
                 </ul>
