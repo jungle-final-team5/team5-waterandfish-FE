@@ -287,7 +287,12 @@ const LearnSession = () => {
           console.log(categoryData);
 
           console.log(chapData.lessons);
-          setLessons(chapData.lessons);
+          // 각 lesson에 model_info_url을 추가해서 넘김
+          const lessonsWithModelInfoUrl = chapData.lessons.map(l => ({
+            ...l,
+            model_info_url: l.model_info_url || l.modelInfo || l.url || ""
+          }));
+          setLessons(lessonsWithModelInfoUrl);
         } catch (error) {
           console.error('챕터 데이터 로드 실패:', error);
         }

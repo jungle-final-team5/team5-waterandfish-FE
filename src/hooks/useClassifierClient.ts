@@ -39,6 +39,10 @@ export const useClassifierClient = () => {
     const [bufferingPauseTime, setBufferingPauseTime] = useState<number>(0);
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
+    // validation 상태
+    const [isValidated, setIsValidated] = useState<boolean>(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
+
     // refs
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const studyListRef = useRef<string[]>([]);
@@ -171,6 +175,23 @@ export const useClassifierClient = () => {
                 if (connection) {
                     setCurrentConnectionId(connection.id);
                     setRetryAttempts(prev => ({ ...prev, wsConnection: 0 })); // 성공 시 재시도 카운터 리셋
+                    // validation 메시지 전송 (타입명 서버와 맞춤)
+                    if (currentSign) {
+                        console.log('[validation] currentSign:', currentSign);
+                    }
+                    if (currentSign && currentSign.id && connection.ws && connection.ws.readyState === 1) {
+                        const validationMsg = {
+                            type: 'validation', // 서버와 타입명 일치
+                            lesson_id: currentSign.id,
+                        };
+                        try {
+                            connection.ws.send(JSON.stringify(validationMsg));
+                            setIsValidated(false); // 응답 오기 전까지 false
+                            setValidationError(null);
+                        } catch (e) {
+                            setValidationError('validation 메시지 전송 실패');
+                        }
+                    }
                 } else {
                     console.warn(`[LearnSession] No connection found for targetUrl: ${wsUrl}, 재시도 시작`);
                     retryWsConnection(wsUrl);
@@ -201,6 +222,21 @@ export const useClassifierClient = () => {
                     try {
                         const msg = JSON.parse(event.data);
                         switch (msg.type) {
+                            case 'validation_result': {
+                                // 서버에서 validation 결과 수신
+                                console.log('[validation_result]', msg.data);
+                                if (msg.data && msg.data.valid === true) {
+                                    setIsValidated(true);
+                                    setValidationError(null);
+                                } else {
+                                    setIsValidated(false);
+                                    setValidationError(msg.data?.reason || '서버 validation 실패');
+                                    // 모델 불일치 등 validation 실패 시 홈으로 이동
+                                    alert("모델 불일치로 인해 홈으로 이동합니다.");
+                                    navigate('/home');
+                                }
+                                break;
+                            }
                             case 'classification_result': {
 
                                 // 버퍼링 일시정지 중에 None 감지 시 버퍼링 재개
