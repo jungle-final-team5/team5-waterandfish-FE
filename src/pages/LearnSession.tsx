@@ -366,11 +366,11 @@ const LearnSession = () => {
         feedback={feedback}
       />
 
-      <div className="grid lg:grid-cols-2 gap-12 w-full flex-1 px-4 border-2 border-red-500 overflow-hidden">
+      <div className="grid lg:grid-cols-2 gap-[2vw] w-full flex-1 px-[2vw] border-2 border-red-500 overflow-hidden">
 
-        <div className="h-full p-3 bg-gray-100 rounded-md flex flex-col">
+        <div className="h-full p-[1.5vw] bg-gray-100 rounded-md flex flex-col border-2 border-red-500">
 
-          <div className="space-y-4 relative flex-1">
+          <div className="space-y-[1.5vw] relative flex-1">
             {videoSrc ? (
               <>
                 <video
@@ -383,7 +383,7 @@ const LearnSession = () => {
                   onClick={togglePlaybackSpeed}
                 />
                 {isSlowMotion && (
-                  <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-md text-xl font-medium">
+                  <div className="absolute top-[0.5vw] right-[0.5vw] bg-black bg-opacity-60 text-white px-[0.5vw] py-[0.25vw] rounded-md text-[1.2vw] font-medium">
                     0.5x
                   </div>
                 )}
@@ -395,7 +395,7 @@ const LearnSession = () => {
             )}
           </div>
 
-          <div className="mt-4 flex-1 flex justify-center items-center mx-auto max-w-4xl">
+          <div className="mt-[1.5vw] flex-1 flex justify-center items-center mx-auto w-full max-w-[90%]">
             {lessons && (
               <SlideScale
                 words={lessons?.map((lesson: any) => lesson.word)}
@@ -408,15 +408,13 @@ const LearnSession = () => {
           </div>
         </div>
 
-        <div className="h-full p-3 bg-gray-100 rounded-md flex flex-col">
+        <div className="h-full p-[1.5vw] bg-gray-100 rounded-md flex flex-col border-2 border-red-500">
           {/* 비디오 입력 영역 */}
-          <div className="space-y-4 flex-1">
+          <div className="space-y-[1.5vw] flex-1">
             <PlayerWindow
-              width={640}
-              height={480}
               autoStart={true}
               showControls={true}
-              className="h-full"
+              className="h-full w-full"
               currentSign={currentLessonSign}
               currentResult={displayConfidence}
             />
@@ -437,7 +435,7 @@ const LearnSession = () => {
 
       {/* 피드백 표시 */}
       {feedback && (
-        <div className="px-4 pb-4">
+        <div className="px-[2vw] pb-[1.5vw]">
           <FeedbackDisplay
             feedback={feedback}
             prediction={currentResult?.prediction}
