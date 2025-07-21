@@ -276,7 +276,10 @@ const LearnSession = () => {
       // disconnectWebSockets()는 여기서 호출하지 않음
     };
   }, [isInitialized]);
-
+  useEffect(() => {
+  // currentSignIndex(즉, currentSign)이 바뀔 때마다 버퍼 비우기
+  setLandmarksBuffer([]);
+  }, [currentSignIndex]);
   // 챕터 아이디를 통해 챕터 첫 준비
   useEffect(() => {
     if (chapterId) {
