@@ -11,7 +11,7 @@ import React, { useState, useRef, useEffect, useCallback, startTransition } from
 
 import API from '@/components/AxiosInstance';
 import useWebsocket, { getConnectionByUrl, disconnectWebSockets } from '@/hooks/useWebsocket';
-import VideoInput from '@/components/PlayerWindow';
+import PlayerWindow from '@/components/PlayerWindow';
 import SessionHeader from '@/components/SessionHeader';
 import LearningDisplay from '@/components/LearningDisplay';
 import FeedbackDisplay from '@/components/FeedbackDisplay';
@@ -355,7 +355,7 @@ const LearnSession = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <SessionHeader
         currentMode={"학습"}
         chapterId={chapterId}
@@ -366,11 +366,11 @@ const LearnSession = () => {
         feedback={feedback}
       />
 
-      <div className="grid lg:grid-cols-2 gap-12 w-full max-w-full md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4">
+      <div className="grid lg:grid-cols-2 gap-12 w-full flex-1 px-4 border-2 border-red-500 overflow-hidden">
 
-        <div className="mt-4 p-3 bg-gray-100 rounded-md">
+        <div className="h-full p-3 bg-gray-100 rounded-md flex flex-col">
 
-          <div className="space-y-4 relative">
+          <div className="space-y-4 relative flex-1">
             {videoSrc ? (
               <>
                 <video
@@ -408,10 +408,10 @@ const LearnSession = () => {
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-gray-100 rounded-md">
+        <div className="h-full p-3 bg-gray-100 rounded-md flex flex-col">
           {/* 비디오 입력 영역 */}
-          <div className="space-y-4">
-            <VideoInput
+          <div className="space-y-4 flex-1">
+            <PlayerWindow
               width={640}
               height={480}
               autoStart={true}
@@ -433,18 +433,18 @@ const LearnSession = () => {
             </div>
           </div>
         </div>
-
-        {/* 피드백 표시 */}
-        {feedback && (
-          <div className="mt-8">
-            <FeedbackDisplay
-              feedback={feedback}
-              prediction={currentResult?.prediction}
-              onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
-            />
-          </div>
-        )}
       </div>
+
+      {/* 피드백 표시 */}
+      {feedback && (
+        <div className="px-4 pb-4">
+          <FeedbackDisplay
+            feedback={feedback}
+            prediction={currentResult?.prediction}
+            onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
+          />
+        </div>
+      )}
     </div>
   );
 };
