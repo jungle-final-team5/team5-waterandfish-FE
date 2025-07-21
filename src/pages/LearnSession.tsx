@@ -277,8 +277,8 @@ const LearnSession = () => {
     };
   }, [isInitialized]);
   useEffect(() => {
-  // currentSignIndex(즉, currentSign)이 바뀔 때마다 버퍼 비우기
-  setLandmarksBuffer([]);
+    // currentSignIndex(즉, currentSign)이 바뀔 때마다 버퍼 비우기
+    setLandmarksBuffer([]);
   }, [currentSignIndex]);
   // 챕터 아이디를 통해 챕터 첫 준비
   useEffect(() => {
@@ -366,49 +366,50 @@ const LearnSession = () => {
         feedback={feedback}
       />
 
-      <div className="grid lg:grid-cols-2 gap-[2vw] w-full flex-1 px-[2vw] border-2 border-red-500 overflow-hidden">
+      <div className="grid lg:grid-cols-2 gap-[2vw] w-full flex-1 px-[2vw] overflow-hidden">
 
-        <div className="h-full p-[1.5vw] bg-gray-100 rounded-md flex flex-col border-2 border-red-500">
-
-          <div className="space-y-[1.5vw] relative flex-1">
-            {videoSrc ? (
-              <>
-                <video
-                  src={videoSrc}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-contain"
-                  onClick={togglePlaybackSpeed}
+        <div className="h-full p-[1.5vw] bg-gray-100 rounded-md flex flex-col">
+          <div className="h-full bg-gray-100 rounded-md flex flex-col justify-between">
+            <div className="flex-1">
+              {videoSrc ? (
+                <>
+                  <video
+                    src={videoSrc}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-contain"
+                    onClick={togglePlaybackSpeed}
+                  />
+                  {isSlowMotion && (
+                    <div className="absolute top-[0.5vw] right-[0.5vw] bg-black bg-opacity-60 text-white px-[0.5vw] py-[0.25vw] rounded-md text-[1.2vw] font-medium">
+                      0.5x
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center bg-gray-200 rounded h-full w-full">
+                  <p>비디오 로딩 중...</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-center mx-auto w-full max-w-[90%]">
+              {lessons && (
+                <SlideScale
+                  words={lessons?.map((lesson: any) => lesson.word)}
+                  currentIndex={currentSignIndex}
+                  feedbackState={feedback} // 'default', 'correct', 'incorrect' 중 하나
+                  onManualChange={handleNextSign} // Add this line
                 />
-                {isSlowMotion && (
-                  <div className="absolute top-[0.5vw] right-[0.5vw] bg-black bg-opacity-60 text-white px-[0.5vw] py-[0.25vw] rounded-md text-[1.2vw] font-medium">
-                    0.5x
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center justify-center bg-gray-200 rounded h-full w-full">
-                <p>비디오 로딩 중...</p>
-              </div>
-            )}
-          </div>
 
-          <div className="mt-[1.5vw] flex-1 flex justify-center items-center mx-auto w-full max-w-[90%]">
-            {lessons && (
-              <SlideScale
-                words={lessons?.map((lesson: any) => lesson.word)}
-                currentIndex={currentSignIndex}
-                feedbackState={feedback} // 'default', 'correct', 'incorrect' 중 하나
-                onManualChange={handleNextSign} // Add this line
-              />
-
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="h-full p-[1.5vw] bg-gray-100 rounded-md flex flex-col border-2 border-red-500">
+        <div className="h-full p-[1.5vw] bg-gray-100 rounded-md flex flex-col">
           {/* 비디오 입력 영역 */}
           <div className="space-y-[1.5vw] flex-1">
             <PlayerWindow

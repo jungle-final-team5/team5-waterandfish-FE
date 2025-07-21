@@ -220,13 +220,13 @@ const PlayerWindow: React.FC<PlayerWindowProps> = ({ // 비디오 입력 컴포�
           </div>
 
           {/* 상태 바 */}
-          <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-200 shadow-sm relative overflow-hidden">
+          <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-200 shadow-sm relative overflow-hidden h-20">
             {/* 차오르는 배경 */}
             <div
               className="absolute top-0 left-0 h-full bg-blue-200 transition-all duration-300 ease-out"
               style={{ width: `${parseFloat(currentResult) || 0}%` }}
             ></div>
-            <div className="relative z-10 text-left">
+            <div className="relative z-10 text-left h-full flex items-center justify-center">
               <h2 className="text-4xl font-italic text-blue-900 text-center">
                 {currentResult}
               </h2>
