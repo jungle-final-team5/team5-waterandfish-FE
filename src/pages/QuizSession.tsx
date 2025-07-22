@@ -147,7 +147,10 @@ const QuizSession = () => {
     minTrackingConfidence: 0.5,
     enableLogging: false // MediaPipe 내부 로그 숨김
   });
-
+    useEffect(() => {
+    // currentSignIndex(즉, currentSign)이 바뀔 때마다 버퍼 비우기
+    setLandmarksBuffer([]);
+    }, [currentSignIndex]);
   useEffect(() => {
     // 녹화 중이고 연결된 상태일 때만 버퍼링 시작
     if (isRecording && isConnected) {
