@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GlobalWebSocketProvider } from "@/contexts/GlobalWebSocketContext";
 
 import Home from "./pages/Home";
-import Learn from "./pages/Learn";
+import Learn from "./pages/SingleLearn";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";

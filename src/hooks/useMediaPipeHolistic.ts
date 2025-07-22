@@ -320,9 +320,31 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
       throw new Error('MediaPipe CDN에 접근할 수 없습니다');
     }
 
-    // 동적 import로 MediaPipe 모듈 로드 (개선된 방식)
-    console.log('📥 MediaPipe 모듈 동적 import 시도...');
-    const mediapipeModule = await import('@mediapipe/holistic');
+    // 로컬 파일을 통한 MediaPipe 모듈 로드 (LetterSession 방식 적용)
+    console.log('📥 MediaPipe 모듈 로컬 파일 로드 시도...');
+    
+    // loadScript 함수 정의
+    const loadScript = (src: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        // public 폴더의 파일을 가리키도록 수정 (앞에 / 를 붙여 절대 경로로 지정)
+        script.src = `/${src}`;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`${src} 로드 실패`));
+        document.body.appendChild(script);
+      });
+    };
+    
+    
+      await Promise.all([
+        loadScript('holistic.js')
+      ]);
+      
+      console.log('MediaPipe 스크립트 로드 성공');
+      
+      // 전역 객체로 로드된 MediaPipe 사용
+      const mediapipeModule = { default: (window as any).Holistic };
+      console.log('전역 객체에서 Holistic 생성자 가져옴:', mediapipeModule.default);
 
     // 모듈 구조 확인
     console.log('🔍 MediaPipe 모듈 구조 확인:', Object.keys(mediapipeModule));
@@ -476,7 +498,6 @@ const loadMediaPipeModule = async (): Promise<boolean> => {
     return false;
   }
 };
-
 // WASM 파일 접근성 확인
 const checkWasmAccessibility = async (): Promise<boolean> => {
   const wasmFiles = [
