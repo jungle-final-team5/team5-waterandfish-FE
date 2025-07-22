@@ -586,7 +586,7 @@ const QuizSession = () => {
 
 
 
-      <div className="grid lg:grid-cols-2 gap-12">
+      <div className="grid lg:grid-cols-2 gap-12 w-full h-full mx-auto px-4">
         <div className="mt-4 p-3 bg-gray-100 rounded-md">
           <div className="flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-8 w-full h-full">
             {/* 퀴즈 타이머 */}
