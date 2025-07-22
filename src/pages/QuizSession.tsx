@@ -247,7 +247,7 @@ const QuizSession = () => {
   }, []);
 
   if (sessionComplete) {
-    // 1. 레슨 상태 업데이트
+/*     // 1. 레슨 상태 업데이트
     API.post(`/progress/chapters/${chapterId}/lessons`, {
       lesson_ids: lessons.map((l) => l.id),
       status: 'study',
@@ -261,7 +261,7 @@ const QuizSession = () => {
         navigate(`/complete/chapter/${chapterId}/${1}`);
       });
     // eslint-disable-next-line
-    // 버퍼링 타이머 정리
+    // 버퍼링 타이머 정리 */
     if (bufferIntervalRef.current) {
       clearInterval(bufferIntervalRef.current);
       bufferIntervalRef.current = null;
@@ -570,7 +570,7 @@ const QuizSession = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <SessionHeader
         currentMode={"퀴즈"}
         chapterId={chapterId}
@@ -583,8 +583,8 @@ const QuizSession = () => {
 
 
 
-      <div className="grid lg:grid-cols-2 gap-12 w-full h-full mx-auto px-4">
-        <div className="mt-4 p-3 bg-gray-100 rounded-md">
+      <div className="grid lg:grid-cols-2 w-full flex-1">
+        <div className="p-3 bg-gray-100 rounded-md">
           <div className="flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-8 w-full h-full">
             {/* 퀴즈 타이머 */}
             {isQuizReady && (
@@ -620,7 +620,7 @@ const QuizSession = () => {
         </div>
 
 
-        <div className="mt-4 p-3 bg-gray-100 rounded-md">
+        <div className="p-3 bg-gray-100 rounded-md">
           {/* 웹캠 및 분류 결과 */}
           <div className="space-y-4">
             <VideoInput
@@ -651,16 +651,11 @@ const QuizSession = () => {
 
         {/* 피드백 표시 */}
         {feedback && (
-          <div className="mt-8">
-            <div className="mb-2 text-sm text-gray-600">
-              디버그: feedback={feedback}, prediction={currentResult?.prediction}
-            </div>
             <FeedbackDisplay
               feedback={feedback}
               prediction={currentResult?.prediction}
               onComplete={feedback === 'correct' ? handleFeedbackComplete : undefined}
             />
-          </div>
         )}
       </div>
     </div>
