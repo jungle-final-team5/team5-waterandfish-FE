@@ -145,10 +145,6 @@ const Learn = () => {
       if (bufferIntervalRef.current) {
         clearInterval(bufferIntervalRef.current);
       }
-
-      console.log("currnesRsutr");
-      console.log(currentResult?.prediction);
-
       // 1초마다 버퍼 전송
       bufferIntervalRef.current = setInterval(() => {
         setLandmarksBuffer(prevBuffer => {
