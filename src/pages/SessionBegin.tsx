@@ -1,3 +1,4 @@
+import React, { useRef, useLayoutEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +31,34 @@ const SessionBegin = () => {
   // URL state에서 lesson_mapper 가져오기
   const lesson_mapper = location.state?.lesson_mapper || {};
   const { connectedCount, totalCount } = useGlobalWebSocketStatus();
+
+  // 캠/학습팁 높이 동기화용 훅 (최상단에서 선언)
+  const [leftTopHeight, setLeftTopHeight] = useState<number | undefined>(undefined);
+  const leftTopRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    function updateHeight() {
+      if (leftTopRef.current) {
+        setLeftTopHeight(leftTopRef.current.offsetHeight);
+      }
+    }
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
+  // 서버 상태 카드 높이 동기화용 훅
+  const [serverCardHeight, setServerCardHeight] = useState<number | undefined>(undefined);
+  const serverCardRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    function updateHeight() {
+      if (serverCardRef.current) {
+        setServerCardHeight(serverCardRef.current.offsetHeight);
+      }
+    }
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
 
   console.log('chapterId', chapterId);
   if (!chapterId) {
@@ -238,8 +267,8 @@ const SessionBegin = () => {
             </Button>
           </div>
         </div>
-      </main >
-    </div >
+      </main>
+    </div>
   );
 };
 
