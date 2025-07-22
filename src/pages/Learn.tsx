@@ -350,7 +350,7 @@ const Learn = () => {
       />
 
       <div className="grid lg:grid-cols-2 gap-12">
-        <div className="mt-12 p-3 bg-gray-100 rounded-md">
+        <div className="p-3 bg-gray-100 rounded-md h-full">
           <div className="space-y-4 relative">
             {videoSrc ? (
               <>
@@ -382,7 +382,7 @@ const Learn = () => {
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-gray-100 rounded-md">
+        <div className="p-3 bg-gray-100 rounded-md">
 
           {/* 비디오 입력 영역 */}
           <div className="space-y-4">
@@ -412,7 +412,7 @@ const Learn = () => {
         </div>
       {/* 피드백 표시 */}
       {feedback && (
-        <div className="px-[2vw] pb-[1.5vw]">
+        <div className="px-[2vw] pb-[1.5vw] border-2 border-yellow-500">
           <FeedbackDisplay
             feedback={feedback}
             prediction={currentResult?.prediction}
