@@ -247,7 +247,7 @@ const QuizSession = () => {
   }, []);
 
   if (sessionComplete) {
-    // 1. 레슨 상태 업데이트
+/*     // 1. 레슨 상태 업데이트
     API.post(`/progress/chapters/${chapterId}/lessons`, {
       lesson_ids: lessons.map((l) => l.id),
       status: 'study',
@@ -261,7 +261,7 @@ const QuizSession = () => {
         navigate(`/complete/chapter/${chapterId}/${1}`);
       });
     // eslint-disable-next-line
-    // 버퍼링 타이머 정리
+    // 버퍼링 타이머 정리 */
     if (bufferIntervalRef.current) {
       clearInterval(bufferIntervalRef.current);
       bufferIntervalRef.current = null;
