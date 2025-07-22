@@ -370,7 +370,7 @@ const LearnSession = () => {
 
         <div className="h-full p-[1.5vw] bg-gray-100 rounded-md flex flex-col">
           <div className="h-full bg-gray-100 rounded-md flex flex-col justify-between">
-            <div className="flex-1">
+            <div className="flex-1 relative">
               {videoSrc ? (
                 <>
                   <video

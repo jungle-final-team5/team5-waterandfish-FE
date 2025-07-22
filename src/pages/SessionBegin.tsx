@@ -200,7 +200,7 @@ const SessionBegin = () => {
                   {connectedCount !== totalCount && (
                     <>
                       <div className="flex items-center justify-center mb-2">
-                        <div className="animate-spin rounded-full h-6 w-6 border-t-blue-600"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-blue-600"></div>
                       </div>
                       <p className="text-sm sm:text-base lg:text-lg text-gray-600">
                         수어 분류 서버에 연결중입니다
@@ -231,10 +231,10 @@ const SessionBegin = () => {
               disabled={connectedCount !== totalCount}
               onClick={startContents}
               size="lg"
-              className="w-full h-24 border border-gray-300 rounded-xl flex justify-center text-base sm:text-lg lg:text-xl font-bold bg-indigo-900 hover:bg-black text-white transition-colors"
+              className="w-full h-24 border border-gray-300 rounded-xl flex justify-center text-2xl sm:text-3xl lg:text-4xl font-bold bg-indigo-900 hover:bg-black text-white transition-colors"
             >
               세션 시작
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <ArrowRight className="h-6 w-6 ml-2" />
             </Button>
           </div>
         </div>
