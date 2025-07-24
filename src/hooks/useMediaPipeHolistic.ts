@@ -112,8 +112,13 @@ class MediaPipeCamera implements CameraInterface {
     }
   }
 
-  private startFrameProcessing(): void {
-    const processFrame = async () => {
+private startFrameProcessing(): void {
+  const TARGET_FPS = 30;
+  const FRAME_INTERVAL = 1000 / TARGET_FPS; // 33.33ms
+  let lastFrameTime = 0;
+
+  const processFrame = async (currentTime: number) => {
+    if (currentTime - lastFrameTime >= FRAME_INTERVAL) {
       if (this.video.readyState >= 2) { // HAVE_CURRENT_DATA
         try {
           await this.options.onFrame();
@@ -121,11 +126,14 @@ class MediaPipeCamera implements CameraInterface {
           console.warn('⚠️ 프레임 처리 오류:', error);
         }
       }
-      this.animationId = requestAnimationFrame(processFrame);
-    };
-
+      lastFrameTime = currentTime;
+    }
     this.animationId = requestAnimationFrame(processFrame);
-  }
+  };
+
+  this.animationId = requestAnimationFrame(processFrame);
+}
+
 
   stop(): void {
     // 애니메이션 프레임 정지
