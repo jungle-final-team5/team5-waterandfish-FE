@@ -107,6 +107,7 @@ const LearnSession = () => {
     if (isRecording && isConnected) {
       setLandmarksBuffer(prev => {
         const newBuffer = [...prev, landmarks];
+        console.log("정보 : " + newBuffer);
         return newBuffer;
       });
     } else {
