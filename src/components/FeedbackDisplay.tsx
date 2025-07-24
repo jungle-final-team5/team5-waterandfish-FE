@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 
 interface FeedbackDisplayProps {
-  feedback: 'correct' | 'incorrect';
+  feedback: 'correct' | 'incorrect' | null;
   prediction?: any;
   onComplete?: () => void;
 }

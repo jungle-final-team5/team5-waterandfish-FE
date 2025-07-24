@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { signClassifierClient, ClassificationResult, LandmarksData } from '../services/SignClassifierClient';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -87,7 +88,13 @@ const QuizSession = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isRequestedBadge, setIsRequestedBadge] = useState<boolean>(false);
 
+
   const [sessionComplete, setSessionComplete] = useState(false);
+
+  // currentSignIndex가 바뀌면 landmarksBuffer를 비움
+  useEffect(() => {
+    setLandmarksBuffer([]);
+  }, [currentSignIndex]);
 
   // 퀴즈 타이머 관련 (위로 이동)
   const [timerActive, setTimerActive] = useState(false);
@@ -128,7 +135,7 @@ const QuizSession = () => {
   const togglePlaybackSpeed = () => {
     setIsSlowMotion(prev => !prev);
   };
-
+  
   // 랜드마크 버퍼링 및 전송 처리
   // MediaPipe holistic hook 사용
   const {
@@ -398,7 +405,7 @@ const QuizSession = () => {
       if (percent >= 80.0) {
         // console.log("✅ 정답! 시간 내에 성공");
         setTimerActive(false);
-        setFeedback("correct");
+      setFeedback(prev => (prev === 'correct' ? prev : 'correct'));
 
         // 퀴즈 결과 저장 (정답)
         if (currentSign) {
@@ -478,10 +485,12 @@ const QuizSession = () => {
 
   // 시간 초과 시 호출
   const handleTimeUp = useCallback(() => {
+    // 이미 정답 처리된 경우 오답 처리 방지 (race condition 방지)
+    if (feedback) return;
     // console.log('⏰ 시간 초과! 오답 처리');
     setIsRecording(false);
     setTimerActive(false);
-    setFeedback('incorrect');
+    setFeedback(prev => (prev === 'correct' ? prev : 'incorrect'));
 
     if (currentSign) {
       // 새 결과 객체 생성
@@ -507,7 +516,7 @@ const QuizSession = () => {
       // console.log(currentSign.id);
       // console.log("틀린거 저장 완료하다");
     }
-  }, [currentSign]);
+  }, [currentSign, feedback]);
 
   // 퀴즈 시작 함수
   const handleStartQuiz = () => {
