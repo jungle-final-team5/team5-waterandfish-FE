@@ -18,6 +18,7 @@ const QuizTimer = ({ duration, onTimeUp, isActive, onTimeChange }: QuizTimerProp
       console.log('⏰ 타이머 시작:', duration, '초');
       setTimeLeft(duration);
     } else {
+        
       console.log('⏸️ 타이머 정지');
     }
   }, [isActive, duration]);
