@@ -537,7 +537,7 @@ const QuizSession = () => {
 
   useEffect(() => {
     if (currentResult) {
-      if (!quizStarted) {
+      if (!quizStarted && feedback === null) {
         handleStartQuiz();
       }
     }
@@ -596,7 +596,7 @@ const QuizSession = () => {
         <div className="p-3 bg-gray-100 rounded-md">
           <div className="flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-8 w-full h-full">
             {/* 퀴즈 타이머 */}
-            {isQuizReady && (
+            {isQuizReady && feedback === null && (
               <div className="mb-6 w-full">
                 <QuizTimer
                   duration={QUIZ_TIME_LIMIT}
