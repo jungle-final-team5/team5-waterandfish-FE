@@ -330,6 +330,8 @@ const QuizSession = () => {
         }));
         await API.post(`/quiz/chapter/${chapterId}/submit`, {
           results: results
+        }).then(() => {
+          API.post('/study/sessions/complete', { chapter_id: chapterId });
         });
         // console.log('퀴즈 결과 제출 완료');
       } catch (error) {
